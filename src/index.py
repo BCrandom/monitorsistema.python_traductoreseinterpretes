@@ -1,7 +1,10 @@
 import os
 import sys
 import time
+
+##Importar otros codigos
 from reportes import GeneradorReporte 
+from core import recolector
 
 def limpiar_pantalla():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -27,11 +30,13 @@ def menu_principal():
         if opcion == "1":
             print("\nIniciando monitoreo... (Ctrl+C para volver)")
             # llamar_a: nucleo.recolector.monitoreo_vivo()
+            recolector.monitoreo_vivo()
             input("\nPresiona Enter para volver...")
         
         elif opcion == "2":
             print("\nBuscando procesos pesados...")
             # llamar_a: nucleo.recolector.obtener_top_procesos()
+            recolector.obtener_top_procesos()
             input("\nPresiona Enter para volver...")
 
         elif opcion == "3":
