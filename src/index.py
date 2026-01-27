@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-
+from reportes import GeneradorReporte 
 
 def limpiar_pantalla():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -46,7 +46,8 @@ def menu_principal():
 
         elif opcion == "5":
             print("\nGenerando reporte PDF con gráficas...")
-            # llamar_a: reportes.generador.crear_reporte()
+            reporte = GeneradorReporte() 
+            reporte.crear_reporte()
             input("\nReporte listo en la carpeta /reportes. Presiona Enter...")
 
         elif opcion == "6":
