@@ -1,44 +1,88 @@
-# reportes/generador.py
 import os
 import datetime
 from fpdf import FPDF
 
 class GeneradorReporte:
     def __init__(self, datos=None):
-        self.datos = datos
+        self.datos = datos if datos else {}
         self.pdf = FPDF()
 
     def crear_reporte(self):
-        # --- Configuración del PDF (Igual que antes) ---
+        d = self.datos
         self.pdf.add_page()
-        self.pdf.set_font("Arial", "B", 16)
-        self.pdf.cell(0, 10, "REPORTE DE ACTIVIDAD DEL SISTEMA", ln=True, align='C')
+        
+        # --- ENCABEZADO ---
+        self.pdf.set_fill_color(30, 50, 100)
+        self.pdf.rect(0, 0, 210, 35, 'F')
+        self.pdf.set_text_color(255, 255, 255)
+        self.pdf.set_font("Arial", "B", 18)
+        self.pdf.cell(0, 12, "AUDITORIA TECNICA DETALLADA", ln=True, align='C')
+        self.pdf.set_font("Arial", "I", 10)
+        self.pdf.cell(0, 8, f"Captura: {d.get('timestamp', datetime.datetime.now().strftime('%H:%M:%S'))}", ln=True, align='C')
+        self.pdf.ln(12)
+        self.pdf.set_text_color(0, 0, 0)
+        
+        def fila_dato(label, valor):
+            self.pdf.set_font("Arial", "B", 10)
+            self.pdf.set_fill_color(245, 245, 245)
+            self.pdf.cell(65, 8, f" {label}:", border=1, fill=True)
+            self.pdf.set_font("Arial", "", 10)
+            self.pdf.cell(125, 8, f" {str(valor)}", border=1, ln=True)
+
+        # --- SECCION I: HARDWARE Y GRAFICOS ---
+        self.pdf.set_font("Arial", "B", 11)
+        self.pdf.cell(0, 8, "I. COMPONENTES DE HARDWARE", ln=True)
+        fila_dato("Sistema Operativo", f"{d.get('os_caption')} (v.{d.get('os_version')})")
+        fila_dato("Procesador", d.get('cpu_name'))
+        fila_dato("GPU", d.get('gpu_name'))
+        fila_dato("VRAM (Memoria Video)", d.get('vram')) # Verifica que en Alpha_0_1 se llame 'vram'
+        self.pdf.ln(4)
+
+        # --- SECCION II: ESTADO DE MEMORIA (AQUI ESTA EL SWAP) ---
+        self.pdf.set_font("Arial", "B", 11)
+        self.pdf.cell(0, 8, "II. MEMORIA Y RENDIMIENTO", ln=True)
+        fila_dato("CPU en Uso Real", f"{d.get('cpu_final')}%")
+        fila_dato("RAM Total", f"{d.get('ram_total')} GB")
+        fila_dato("RAM Disponible", f"{d.get('ram_disp')} GB")
+        fila_dato("RAM Usada (%)", f"{d.get('ram_uso_p')}%")
+        # LLAVE CRITICA: Asegúrate que en Alpha_0_1 sea 'swap_info'
+        fila_dato("MEMORIA SWAP", d.get('swap_info', 'Error: Dato SWAP no recibido')) 
+        self.pdf.ln(4)
+
+        # --- SECCION III: ALMACENAMIENTO ---
+        self.pdf.set_font("Arial", "B", 11)
+        self.pdf.cell(0, 8, "III. ALMACENAMIENTO (DISCO C:)", ln=True)
+        # Mostramos capacidad total y libre
+        total_d = d.get('disco_total', '103.00')
+        libre_d = d.get('disco_c_libre', 0)
+        fila_dato("Capacidad Total", f"{total_d} GB")
+        fila_dato("Espacio Libre", f"{libre_d:.2f} GB")
+        fila_dato("Actividad I/O", f"Lectura: {d.get('disco_io_r')} | Escritura: {d.get('disco_io_w')}")
+        self.pdf.ln(4)
+
+        # --- SECCION IV: SISTEMA Y SESION ---
+        self.pdf.set_font("Arial", "B", 11)
+        self.pdf.cell(0, 8, "IV. ESTADO DEL SISTEMA", ln=True)
+        fila_dato("Procesos Activos", d.get('pids'))
+        fila_dato("Tiempo Activo", d.get('uptime'))
+        fila_dato("Usuarios Activos", d.get('user'))
+        fila_dato("Bateria", f"{d.get('bat_p')}%")
+        fila_dato("Cargando", "SI" if d.get('bat_c') else "NO")
         self.pdf.ln(10)
 
-        if not self.datos:
-            self.pdf.set_text_color(200, 0, 0)
-            self.pdf.set_font("Arial", "B", 12)
-            self.pdf.multi_cell(0, 10, "ADVERTENCIA: No se han recolectado datos del sistema todavía.", border=1, align='C')
+        # --- DIAGNOSTICO SEMANTICO ---
+        if float(d.get('ram_uso_p', 0)) > 85 or float(d.get('disco_c_libre', 10)) < 5:
+            self.pdf.set_fill_color(255, 230, 230); self.pdf.set_text_color(150, 0, 0)
+            msg = "DIAGNOSTICO: ESTADO CRITICO - RECURSOS LIMITADOS"
+        else:
+            self.pdf.set_fill_color(230, 255, 230); self.pdf.set_text_color(0, 100, 0)
+            msg = "DIAGNOSTICO: SISTEMA SALUDABLE"
         
-        # --- LÓGICA DE ALMACENAMIENTO ---
-        
-        # 1. Definir el nombre de la carpeta (dentro del proyecto)
-        nombre_carpeta = "reportes_generados"
-        
-        # 2. Crear la carpeta si no existe
-        if not os.path.exists(nombre_carpeta):
-            os.makedirs(nombre_carpeta)
-            print(f"[SISTEMA] Carpeta '{nombre_carpeta}' creada con éxito.")
+        self.pdf.set_font("Arial", "B", 12)
+        self.pdf.cell(0, 12, f"  {msg}", border=1, ln=True, fill=True)
 
-        # 3. Crear un nombre de archivo único con fecha y hora
-        # Ejemplo: reporte_20240520_153022.pdf
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_archivo = f"reporte_{timestamp}.pdf"
-        
-        # 4. Unir la carpeta con el nombre del archivo
-        ruta_final = os.path.join(nombre_carpeta, nombre_archivo)
-
-        # 5. Guardar el PDF en esa ruta
-        self.pdf.output(ruta_final)
-        
-        print(f"\n[ÉXITO] Reporte guardado en: {ruta_final}")
+        # Guardar y abrir
+        if not os.path.exists("reportes_generados"): os.makedirs("reportes_generados")
+        ruta = os.path.join("reportes_generados", f"Reporte_{datetime.datetime.now().strftime('%H%M%S')}.pdf")
+        self.pdf.output(ruta)
+        os.startfile(os.path.abspath(ruta))

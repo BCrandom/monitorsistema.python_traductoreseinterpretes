@@ -1,10 +1,8 @@
 import os
 import sys
 import time
-
-##Importar otros codigos
 from reportes import GeneradorReporte 
-from core import recolector
+import Alpha_0_1
 
 def limpiar_pantalla():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -29,31 +27,38 @@ def menu_principal():
 
         if opcion == "1":
             print("\nIniciando monitoreo... (Ctrl+C para volver)")
-            # llamar_a: nucleo.recolector.monitoreo_vivo()
-            recolector.monitoreo_vivo()
+            Alpha_0_1.monitoreo_envivo()
             input("\nPresiona Enter para volver...")
         
         elif opcion == "2":
             print("\nBuscando procesos pesados...")
-            # llamar_a: nucleo.recolector.obtener_top_procesos()
-            recolector.obtener_top_procesos()
+            # recolector.obtener_top_procesos() # Asegúrate de que recolector esté importado
             input("\nPresiona Enter para volver...")
 
         elif opcion == "3":
             print("\nCapturando estado del sistema...")
-            # llamar_a: nucleo.analizador.obtener_instantanea()
             input("\nPresiona Enter para volver...")
 
         elif opcion == "4":
             print("\nConfigurando registro en segundo plano...")
-            # llamar_a: datos.almacenamiento.configurar_logging()
             input("\nConfiguración guardada. Presiona Enter...")
 
         elif opcion == "5":
-            print("\nGenerando reporte PDF con gráficas...")
-            reporte = GeneradorReporte() 
-            reporte.crear_reporte()
-            input("\nReporte listo en la carpeta /reportes. Presiona Enter...")
+            print("\n[+] Iniciando recolección de datos...")
+            # TODO ESTE BLOQUE DEBE ESTAR INDENTADO DENTRO DE LA OPCION 5
+            try:
+                datos = Alpha_0_1.obtener_datos_reporte() 
+                
+                print("[+] Generando archivo PDF...")
+                reporte = GeneradorReporte(datos)
+                reporte.crear_reporte()
+                
+                print("\n[ÉXITO] El reporte se ha generado correctamente.")
+                input("\nPresiona Enter para volver...")
+                
+            except Exception as e:
+                print(f"\n[ERROR] No se pudo generar el reporte: {e}")
+                input("\nPresiona Enter para volver...")
 
         elif opcion == "6":
             print("\nCerrando el sistema. ¡Hasta luego!")
