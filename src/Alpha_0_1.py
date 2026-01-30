@@ -1,148 +1,163 @@
-
+import os
+import sys
 import psutil, datetime
 import wmi
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.columns import Columns
+from rich.text import Text
+from rich import box
+
+if sys.platform == "win32":
+    os.system('') 
+
+# Forzamos Truecolor y configuramos una sola instancia de consola
+console = Console(color_system="truecolor")
+
+# COLORES 
+SNAP_COLOR = "#3e978b"
+SYS_COLOR  = "#d2e603"
+MARCO_COLOR = "#2ec1ac"
+ADORN_COLOR = "#eff48e"
 
 def monitoreo_envivo():
-    # Inicializamos d_libre_C fuera para que los diccionarios siempre lo encuentren
     d_libre_C = 0 
-    
     try:
         c = wmi.WMI()
-        # 0. CAPTURA PREVIA
+        # CAPTURA DE DATOS
         v_ram = psutil.virtual_memory()
         v_swap = psutil.swap_memory()
         v_net = psutil.net_io_counters()
         v_stats = psutil.cpu_stats()
         v_boot_time = psutil.boot_time()
+        v_disk_io = psutil.disk_io_counters()
+        battery = psutil.sensors_battery()
+        cpu_p = psutil.cpu_percent(interval=1) # <--- ESTA LÍNEA DEBE ESTAR ARRIBA
 
-        # 1. INFORMACIÓN DEL SISTEMA
-        for os in c.Win32_OperatingSystem():
-            print("-" * 13)
-            print(f"OS: {os.Caption} | Versión: {os.Version}")
-        for cpu_info in c.Win32_Processor():
-            print(f"Procesador: {cpu_info.Name}")
-        print("-" * 13)
-
-        # 2. RED
-        print(f"RED: Enviado: {v_net.bytes_sent / (1024**2):.2f} MB | Recibido: {v_net.bytes_recv / (1024**2):.2f} MB")
-        print("-" * 13)
-
-        # 3. GRÁFICOS E INFORMACIÓN DE LA CPU
-        print("--- GRÁFICOS ---")
-        for gpu in c.Win32_VideoController():
-            v_vram = abs(int(gpu.AdapterRAM)) / (1024**2) if gpu.AdapterRAM else 0
-            print(f"GPU: {gpu.Name} | VRAM: {v_vram:.2f} MB")
-        print("-" * 13)
-
-        print("--- INFORMACIÓN DE LA CPU ---")
-        for processor in c.Win32_Processor():
-            print(f"== PROCESADOR: {processor.Name.strip()} ==")
-            print(f"Fabricante: {processor.Manufacturer}")
-            print(f"Núcleos: {processor.NumberOfCores}")
-            print(f"Procesadores lógicos: {processor.NumberOfLogicalProcessors}")
-            print(f"Arquitectura: {processor.AddressWidth} bits")
-            print(f"Velocidad actual: {processor.CurrentClockSpeed} MHz")
-            print(f"Velocidad máxima: {processor.MaxClockSpeed} MHz")
-            print(f"Socket: {processor.SocketDesignation}")
-            print(f"ID: {processor.ProcessorId}")
-            print(f"Nivel de caché L2: {processor.L2CacheSize} KB")
-            print(f"Nivel de caché L3: {processor.L3CacheSize} KB")
-        print("-" * 50)
-    
-        # 4. Ventilador (La librería WMI tiene limitaciones y LibreHardware requiere más trabajo de implementar)
-        fan_speeds = {}
-        try:
-            for fan in c.Win32_Fan():
-                if fan.DescriptiveName:  # Verificar que tenga nombre
-                # DesiredSpeed es la velocidad deseada/actual
-                    fan_speeds[fan.DescriptiveName] = fan.DesiredSpeed
-        except:
-            pass  # Si no existe la clase, continuamos
-    
-        for sensor in c.Win32_TemperatureProbe():
-         # Buscamos sensores que mencionen "fan" en el nombre
-            if "fan" in sensor.Name.lower():
-                # CurrentReading es la lectura actual
-                fan_speeds[sensor.Name] = sensor.CurrentReading
+        # --- PANEL 1: IDENTIDAD DEL SISTEMA ---
+        sys_text = Text()
+        for os_info in c.Win32_OperatingSystem():
+            sys_text.append(f"OS: {os_info.Caption}\n", style=ADORN_COLOR)
+            sys_text.append(f"Versión: {os_info.Version}\n", style="white")
         
-        speeds = fan_speeds
-    
-        if speeds:
-            print("Ventiladores encontrados:")
-            for fan, speed in speeds.items():
-                print(f"  {fan}: {speed} RPM")
-        else:
-         print("No se encontraron datos de ventiladores, es posible que su hardware no exponga datos mediante WMI")
+        uptime = datetime.datetime.now() - datetime.datetime.fromtimestamp(v_boot_time)
+        sys_text.append(f"Uptime: {str(uptime).split('.')[0]}\n", style=SYS_COLOR)
+        sys_text.append(f"Arranque: {datetime.datetime.fromtimestamp(v_boot_time).strftime('%Y-%m-%d %H:%M:%S')}", style="grey70")
+        
+        p_sys = Panel(sys_text, title=f"[{MARCO_COLOR}]💻 SISTEMA[/]", border_style=MARCO_COLOR, expand=True)
 
-        # 5. ALMACENAMIENTO
-        print("\n--- ALMACENAMIENTO ---")
+        # --- PANEL 2: CPU DETALLADA (TODA LA INFO WMI) ---
+        cpu_table = Table(show_header=False, box=None, padding=(0, 1))
+
+        color_carga = "green" if cpu_p < 70 else "yellow" if cpu_p < 85 else "red"
+        cpu_table.add_row(f"[{SYS_COLOR}]USO ACTUAL DE CPU:[/]", f"[bold {color_carga}]{cpu_p}%[/]")
+        cpu_table.add_row("", "") # Una línea de espacio para que respire el diseño
+
+        for proc in c.Win32_Processor():
+            cpu_table.add_row(f"[{SNAP_COLOR}]Nombre:[/]", proc.Name.strip())
+            cpu_table.add_row(f"[{SNAP_COLOR}]Fabricante:[/]", proc.Manufacturer)
+            cpu_table.add_row(f"[{SNAP_COLOR}]Núcleos/Hilos:[/]", f"{proc.NumberOfCores} / {proc.NumberOfLogicalProcessors}")
+            cpu_table.add_row(f"[{SNAP_COLOR}]Arquitectura:[/]", f"{proc.AddressWidth} bits")
+            cpu_table.add_row(f"[{SNAP_COLOR}]Frecuencia:[/]", f"{proc.CurrentClockSpeed} / {proc.MaxClockSpeed} MHz")
+            cpu_table.add_row(f"[{SNAP_COLOR}]Socket/ID:[/]", f"{proc.SocketDesignation} / {proc.ProcessorId}")
+            cpu_table.add_row(f"[{SNAP_COLOR}]Caché L2/L3:[/]", f"{proc.L2CacheSize}KB / {proc.L3CacheSize}KB")
+        
+        p_cpu = Panel(cpu_table, title=f"[{MARCO_COLOR}]⚙️ PROCESADOR[/]", border_style=MARCO_COLOR, expand=True)
+
+        # --- PANEL 3: MEMORIA Y RED ---
+        mem_net_table = Table(show_header=False, box=None)
+        mem_net_table.add_row(f"[{SYS_COLOR}]RAM Total:[/]", f"{round(v_ram.total / (1024**3), 2)} GB")
+        mem_net_table.add_row(f"[{SYS_COLOR}]RAM Libre:[/]", f"{round(v_ram.available / (1024**3), 2)} GB")
+        mem_net_table.add_row(f"[{SYS_COLOR}]RAM Uso:[/]", f"{v_ram.percent}%")
+        mem_net_table.add_row(f"[{SYS_COLOR}]SWAP Uso:[/]", f"{v_swap.percent}% ({v_swap.free / (1024**3):.2f} GB lib)")
+        mem_net_table.add_row("", "") # Espacio
+        mem_net_table.add_row(f"[{ADORN_COLOR}]RED Enviado:[/]", f"{v_net.bytes_sent / (1024**2):.2f} MB")
+        mem_net_table.add_row(f"[{ADORN_COLOR}]RED Recibido:[/]", f"{v_net.bytes_recv / (1024**2):.2f} MB")
+        
+        p_mem = Panel(mem_net_table, title=f"[{MARCO_COLOR}]📊 MEMORIA & RED[/]", border_style=MARCO_COLOR, expand=True)
+
+        # Imprimir primera fila de paneles
+        console.print(Columns([p_sys, p_cpu, p_mem]))
+
+        # --- PANEL 4: ALMACENAMIENTO E I/O ---
+        disk_table = Table(box=box.SIMPLE, header_style=SYS_COLOR, expand=True)
+        disk_table.add_column("Unidad")
+        disk_table.add_column("Total")
+        disk_table.add_column("Libre")
+        disk_table.add_column("Uso I/O")
+
         for disco in c.Win32_LogicalDisk(DriveType=3):
             d_total = int(disco.Size) / (1024**3)
             d_libre = int(disco.FreeSpace) / (1024**3)
             if disco.DeviceID == "C:": d_libre_C = d_libre
-            print(f"Unidad {disco.DeviceID} | {d_total:.2f} GB Totales | {d_libre:.2f} GB Libres")
-            
-        v_disk_io = psutil.disk_io_counters()
-        print(f"Actividad I/O: Lectura: {v_disk_io.read_bytes / (1024**2):.2f} MB | Escritura: {v_disk_io.write_bytes / (1024**2):.2f} MB")
-        print("-" * 13)
-
-        # 6. RESUMEN DE EJECUCIÓN
-        pids = psutil.pids()
-        print(f"Procesos activos: {len(pids)} | Cambios de Contexto: {v_stats.ctx_switches}")
-        print(f"MEMORIA SWAP: {v_swap.percent}% usado ({v_swap.free / (1024**3):.2f} GB libres)")
-
-        # 7. TIEMPO ACTIVO Y USUARIOS
-        uptime = datetime.datetime.now() - datetime.datetime.fromtimestamp(v_boot_time)
-        print(f"TIEMPO ACTIVO: {str(uptime).split('.')[0]}")
-
-        usuarios = psutil.users()
-        if usuarios:
-            print(f"USUARIOS ACTIVOS: {', '.join([u.name for u in usuarios])}")
+            disk_table.add_row(
+                disco.DeviceID, 
+                f"{d_total:.2f} GB", 
+                f"{d_libre:.2f} GB",
+                f"L: {v_disk_io.read_bytes / (1024**2):.1f}MB | E: {v_disk_io.write_bytes / (1024**2):.1f}MB"
+            )
         
-        # 8. TEMPERATURA (Sub-bloque protegido)
+        p_disk = Panel(disk_table, title=f"[{MARCO_COLOR}]💾 ALMACENAMIENTO[/]", border_style=MARCO_COLOR)
+
+        # --- PANEL 5: GRÁFICOS Y SENSORES ---
+        sensor_text = Text()
+        sensor_text.append("--- GPU ---\n", style=ADORN_COLOR)
+        for gpu in c.Win32_VideoController():
+            v_vram = abs(int(gpu.AdapterRAM)) / (1024**2) if gpu.AdapterRAM else 0
+            sensor_text.append(f"{gpu.Name} | VRAM: {v_vram:.2f} MB\n")
+        
+        sensor_text.append("\n--- VENTILADORES ---\n", style=ADORN_COLOR)
+        fan_found = False
+        try:
+            for fan in c.Win32_Fan():
+                if fan.DescriptiveName: 
+                    sensor_text.append(f"  {fan.DescriptiveName}: {fan.DesiredSpeed} RPM\n")
+                    fan_found = True
+        except: pass
+        if not fan_found: sensor_text.append("No se detectan RPM (WMI Limitado)\n", style="grey50")
+
+        # Temperatura (Solo si hay acceso)
         try:
             w_temp = wmi.WMI(namespace="root\\wmi")
             temp_raw = w_temp.MSAcpi_ThermalZoneTemperature()
             if temp_raw:
                 temp_c = (temp_raw[0].CurrentTemperature / 10.0) - 273.15
-                print(f"TEMPERATURA CPU: {temp_c:.1f} °C")
+                sensor_text.append(f"\nTEMPERATURA CPU: {temp_c:.1f} °C", style="bold orange1")
         except:
-            print("TEMPERATURA: No disponible (requiere Admin)")
+            sensor_text.append("\nTEMP: No disponible (Sin Admin)", style="grey50")
 
-        # 9. ANÁLISIS DE ANOMALÍAS (El Semáforo)
-        print("\n>>> ANÁLISIS SEMÁNTICO:")
+        p_sensor = Panel(sensor_text, title=f"[{MARCO_COLOR}]🌡️ HARDWARE & FANS[/]", border_style=MARCO_COLOR, expand=True)
+
+        # Imprimir segunda fila
+        console.print(Columns([p_disk, p_sensor]))
+
+        # --- PANEL FINAL: ESTADO Y PROCESOS ---
+        pids = psutil.pids()
+        usuarios = psutil.users()
+        usr_str = ', '.join([u.name for u in usuarios]) if usuarios else "Ninguno"
+        
+        footer_text = Text()
+        footer_text.append(f"Procesos Activos: {len(pids)}  |  Context Switches: {v_stats.ctx_switches}  |  Usuarios: {usr_str}\n", style="white")
+        
+        if battery:
+            estado_bat = "🔌 Cargando" if battery.power_plugged else "🔋 Sin cargar"
+            footer_text.append(f"BATERÍA: {battery.percent}% [{estado_bat}]\n", style=SYS_COLOR)
+
+        # Semáforo
         if v_ram.percent > 85 or d_libre_C < 5:
-            print("🔴 ESTADO: CRÍTICO - Recursos agotados.")
+            footer_text.append("🔴 ESTADO CRÍTICO: Recursos casi agotados.", style="bold red")
         elif v_ram.percent > 70:
-            print("🟡 ESTADO: ADVERTENCIA - Carga elevada.")
+            footer_text.append("🟡 ESTADO ADVERTENCIA: Carga elevada.", style="bold yellow")
         else:
-            print("🟢 ESTADO: SALUDABLE")
-        print("=" * 15)
+            footer_text.append("🟢 SISTEMA SALUDABLE", style="bold green")
+
+        console.print(Panel(footer_text, title=f"[{MARCO_COLOR}]📝 RESUMEN DE EJECUCIÓN[/]", border_style=MARCO_COLOR))
 
     except Exception as e:
-        print(f"❌ Error crítico en el monitoreo: {e}")
-        return None
+        console.print(f"[bold red]❌ Error crítico: {e}[/]")
 
-    # --- REPARACIÓN DE LOS PRINTS Y RECOLECCIÓN ---
-    # Salimos del bloque try para los prints finales
-    print("Porcentaje de CPU usado:" , psutil.cpu_percent(interval=1))
-    print("-------------")
-    print("Cantidad total de RAM:" , round(v_ram.total / (1024**3), 2), "GB")
-    print("-------------")
-    print("RAM disponible:" , round(v_ram.available / (1024**3), 2), "GB")
-    print("-------------")
-    print("Porcentaje de RAM usada:" , v_ram.percent, "%")
-    print("-------------")
-    
-    battery = psutil.sensors_battery()
-    if battery:
-        print("Porcentaje de batería:" , battery.percent, "%" )
-        print("-------------")
-        print("¿Se está cargando el dispositivo?:" , battery.power_plugged)
-    
-    print("-------------")
-    print("Fecha de arranque: ", datetime.datetime.fromtimestamp(v_boot_time))
-
+    console.print(f"\n[{ADORN_COLOR}]    ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 8 + "[/]")
 def obtener_datos_reporte():
     c = wmi.WMI()
     v_ram = psutil.virtual_memory()

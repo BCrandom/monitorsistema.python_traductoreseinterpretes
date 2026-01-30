@@ -143,4 +143,3 @@ class GeneradorReporte:
         if not os.path.exists("reportes_generados"): os.makedirs("reportes_generados")
         ruta = os.path.join("reportes_generados", f"Reporte_{datetime.datetime.now().strftime('%H%M%S')}.pdf")
         self.pdf.output(ruta)
-        os.startfile(os.path.abspath(ruta))
