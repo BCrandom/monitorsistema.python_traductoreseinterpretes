@@ -34,11 +34,17 @@ def mostrar_menu():
     print("1. [CORE] Monitoreo en Tiempo Real (CPU/RAM/Disco)")
     print("2. [CORE] Ver Top 5 Procesos (Consumo Crítico)")
     print("3. [ANALISIS] Snapshot del Sistema (Uptime/Hilos)")
+<<<<<<< HEAD
     print("4. [DATOS] Configurar Guardado Automático (CSV)")
     print("5. [REPORTE] Generar Informe PDF de Anomalías")
     print("6. Salir")
     print(" ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 5)
     #print("==========================================")
+=======
+    print("4. [REPORTE] Generar Informe PDF de Anomalías")
+    print("5. Salir")
+    print("==========================================")
+>>>>>>> fff4e4b62e0ef27e8abfa94440dbe825afac1b71
         
 def menu_principal():
     while True:
@@ -63,7 +69,7 @@ def menu_principal():
             print("\nConfigurando registro en segundo plano...")
             input("\nConfiguración guardada. Presiona Enter...")
 
-        elif opcion == "5":
+        elif opcion == "4":
             print("\n[+] Iniciando recolección de datos...")
             # TODO ESTE BLOQUE DEBE ESTAR INDENTADO DENTRO DE LA OPCION 5
             try:
@@ -80,7 +86,7 @@ def menu_principal():
                 print(f"\n[ERROR] No se pudo generar el reporte: {e}")
                 input("\nPresiona Enter para volver...")
 
-        elif opcion == "6":
+        elif opcion == "5":
             print("\nCerrando el sistema. ¡Hasta luego!")
             sys.exit()
             
