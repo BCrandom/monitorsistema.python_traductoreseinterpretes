@@ -1,0 +1,229 @@
+{
+    "timestamp": "2026-01-30 12:29:11",
+    "sistema": {
+        "hostname": "DESKTOP-IQM5R9E",
+        "sistema_operativo": "Windows",
+        "version_os": "10.0.19044",
+        "arquitectura": "64bit",
+        "procesador": "AMD64 Family 18 Model 1 Stepping 0, AuthenticAMD",
+        "maquina": "AMD64",
+        "os_caption": "Microsoft Windows 10 Enterprise LTSC",
+        "os_version": "10.0.19044"
+    },
+    "cpu_detallada": {
+        "nombre": "AMD A6-3400M APU with Radeon(tm) HD Graphics",
+        "fabricante": "AuthenticAMD",
+        "nucleos": 4,
+        "procesadores_logicos": 4,
+        "velocidad_actual_mhz": 1400,
+        "velocidad_max_mhz": 1400,
+        "arquitectura_bits": "64 bits",
+        "cache_l2_kb": 4096,
+        "cache_l3_kb": 0,
+        "socket": "Socket FS1"
+    },
+    "rendimiento": {
+        "cpu": {
+            "porcentaje_uso": 25.0,
+            "porcentaje_por_nucleo": [
+                3.1,
+                12.5,
+                15.6,
+                68.8
+            ],
+            "frecuencia_actual": 1400.0,
+            "frecuencia_max": 1400.0,
+            "conteo_fisico": 4,
+            "conteo_logico": 4
+        },
+        "memoria": {
+            "total_gb": 3.48,
+            "disponible_gb": 0.4,
+            "usado_gb": 3.08,
+            "porcentaje_usado": 88.4,
+            "swap_total_gb": 4.13,
+            "swap_usado_gb": 2.1,
+            "swap_porcentaje": 51.0
+        }
+    },
+    "almacenamiento": {
+        "particiones": [
+            {
+                "dispositivo": "C:\\",
+                "punto_montaje": "C:\\",
+                "sistema_archivos": "NTFS",
+                "total_gb": 58.59,
+                "usado_gb": 46.0,
+                "libre_gb": 12.59,
+                "porcentaje_usado": 78.5
+            },
+            {
+                "dispositivo": "E:\\",
+                "punto_montaje": "E:\\",
+                "sistema_archivos": "NTFS",
+                "total_gb": 0.49,
+                "usado_gb": 0.27,
+                "libre_gb": 0.22,
+                "porcentaje_usado": 55.3
+            },
+            {
+                "dispositivo": "F:\\",
+                "punto_montaje": "F:\\",
+                "sistema_archivos": "NTFS",
+                "total_gb": 179.39,
+                "usado_gb": 22.41,
+                "libre_gb": 156.98,
+                "porcentaje_usado": 12.5
+            }
+        ],
+        "io_counters": {
+            "lecturas_totales": 1661429,
+            "escrituras_totales": 806085,
+            "bytes_leidos_mb": 75685.67,
+            "bytes_escritos_mb": 59860.27
+        }
+    },
+    "red": {
+        "direcciones_ip": [
+            {
+                "interfaz": "Ethernet",
+                "direcciones": [
+                    "169.254.138.168",
+                    "fe80::d193:bcd8:970b:3fc6"
+                ]
+            },
+            {
+                "interfaz": "Conexi\u00f3n de \u00e1rea local* 1",
+                "direcciones": [
+                    "169.254.111.203",
+                    "fe80::3f50:b77f:8f9a:42c4"
+                ]
+            },
+            {
+                "interfaz": "Conexi\u00f3n de \u00e1rea local* 10",
+                "direcciones": [
+                    "169.254.29.194",
+                    "fe80::317d:c845:d3f1:330a"
+                ]
+            },
+            {
+                "interfaz": "Wi-Fi",
+                "direcciones": [
+                    "192.168.1.37",
+                    "fe80::2e51:270c:5b12:c001"
+                ]
+            },
+            {
+                "interfaz": "Loopback Pseudo-Interface 1",
+                "direcciones": [
+                    "127.0.0.1",
+                    "::1"
+                ]
+            }
+        ],
+        "estadisticas": {
+            "bytes_enviados_mb": 121.95,
+            "bytes_recibidos_mb": 170.61,
+            "paquetes_enviados": 125866,
+            "paquetes_recibidos": 226822
+        }
+    },
+    "procesos": {
+        "total_procesos": 126,
+        "top_10_cpu": [
+            {
+                "status": "running",
+                "pid": 0,
+                "cpu_percent": 248.9,
+                "memory_percent": 0.00021927372157938476,
+                "name": "System Idle Process"
+            },
+            {
+                "status": "running",
+                "pid": 2456,
+                "cpu_percent": 93.2,
+                "memory_percent": 0.013814244459501239,
+                "name": "conhost.exe"
+            },
+            {
+                "status": "running",
+                "pid": 9912,
+                "cpu_percent": 33.8,
+                "memory_percent": 2.129805657700564,
+                "name": "Code.exe"
+            },
+            {
+                "status": "running",
+                "pid": 7812,
+                "cpu_percent": 8.9,
+                "memory_percent": 1.750352482507439,
+                "name": "python.exe"
+            },
+            {
+                "status": "running",
+                "pid": 4776,
+                "cpu_percent": 6.9,
+                "memory_percent": 7.650460145904734,
+                "name": "Code.exe"
+            }
+        ],
+        "top_10_memoria": [
+            {
+                "status": "running",
+                "pid": 6136,
+                "cpu_percent": 0.0,
+                "memory_percent": 12.92267750755946,
+                "name": "Code.exe"
+            },
+            {
+                "status": "running",
+                "pid": 4776,
+                "cpu_percent": 6.9,
+                "memory_percent": 7.650460145904734,
+                "name": "Code.exe"
+            },
+            {
+                "status": "running",
+                "pid": 9612,
+                "cpu_percent": 0.0,
+                "memory_percent": 6.574922541557853,
+                "name": "chrome.exe"
+            },
+            {
+                "status": "running",
+                "pid": 6676,
+                "cpu_percent": 0.1,
+                "memory_percent": 5.552229904111602,
+                "name": "Code.exe"
+            },
+            {
+                "status": "running",
+                "pid": 7688,
+                "cpu_percent": 0.1,
+                "memory_percent": 2.8104312894829744,
+                "name": "chrome.exe"
+            }
+        ]
+    },
+    "tiempo": {
+        "hora_sistema": "2026-01-30 12:29:11",
+        "fecha_arranque": "2026-01-28 19:19:14"
+    },
+    "usuarios": [
+        {
+            "nombre": "Razor&Shaves",
+            "terminal": null,
+            "host": null,
+            "inicio_sesion": "2026-01-29 00:27:16"
+        }
+    ],
+    "salud_sistema": {
+        "cpu_critico": false,
+        "ram_critico": true,
+        "swap_critico": false,
+        "disco_critico": false,
+        "recomendaciones": [
+            "RAM con uso elevado. Considerar cerrar aplicaciones."
+        ]
+    }
+}

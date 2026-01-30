@@ -1,0 +1,56 @@
+============================================================
+SNAPSHOT DEL SISTEMA - 2026-01-30 12:28:16
+============================================================
+
+1. INFORMACIÓN DEL SISTEMA:
+----------------------------------------
+  Hostname: DESKTOP-IQM5R9E
+  Sistema Operativo: Windows
+  Version Os: 10.0.19044
+  Arquitectura: 64bit
+  Procesador: AMD64 Family 18 Model 1 Stepping 0, AuthenticAMD
+  Maquina: AMD64
+  Os Caption: Microsoft Windows 10 Enterprise LTSC
+  Os Version: 10.0.19044
+
+2. PROCESADOR:
+----------------------------------------
+  Nombre: AMD A6-3400M APU with Radeon(tm) HD Graphics
+  Fabricante: AuthenticAMD
+  Nucleos: 4
+  Procesadores Logicos: 4
+  Velocidad Actual Mhz: 1400
+  Velocidad Max Mhz: 1400
+  Arquitectura Bits: 64 bits
+  Cache L2 Kb: 4096
+  Cache L3 Kb: 0
+  Socket: Socket FS1
+
+3. RENDIMIENTO ACTUAL:
+----------------------------------------
+  CPU Total: 25.0%
+  RAM Usada: 92.1%
+  Swap Usado: 51.0%
+
+4. ALMACENAMIENTO:
+----------------------------------------
+  C:\: 78.5% usado (12.59 GB libre de 58.59 GB)
+  E:\: 55.3% usado (0.22 GB libre de 0.49 GB)
+  F:\: 12.5% usado (156.98 GB libre de 179.39 GB)
+
+5. TOP 5 PROCESOS POR CPU:
+----------------------------------------
+  1. System Idle Process (PID: 0) - CPU: 258.7%
+  2. conhost.exe (PID: 2456) - CPU: 94.9%
+  3. Code.exe (PID: 9912) - CPU: 24.5%
+  4. python.exe (PID: 7812) - CPU: 7.3%
+  5. Code.exe (PID: 4776) - CPU: 5.7%
+
+6. ANÁLISIS DE SALUD:
+----------------------------------------
+  ⚠️  RECOMENDACIONES:
+    • RAM con uso elevado. Considerar cerrar aplicaciones.
+
+============================================================
+Snapshot generado el: 2026-01-30 12:28:16
+============================================================

@@ -1,8 +1,10 @@
 import os
 import sys
 import time
+import datetime
 from reportes import GeneradorReporte 
 from core import recolector
+from core import snapshotmkr
 import Alpha_0_1
 
 def limpiar_pantalla():
@@ -57,7 +59,20 @@ def menu_principal():
 
         elif opcion == "3":
             print("\nCapturando estado del sistema...")
-            input("\nPresiona Enter para volver...")
+            # Crear snapshot
+            snapshot = snapshotmkr.crear_snapshot_sistema()
+    
+            if snapshot:
+                # Mostrar en pantalla
+                snapshotmkr.mostrar_snapshot_pantalla(snapshot)
+                
+                # Preguntar si quiere guardar
+                guardar = input("\n¿Desea guardar el snapshot? (s/n): ").lower()
+                if guardar == 's':
+                    formato = input("Formato (txt/json) [txt]: ").lower() or 'txt'
+                    nombre = input(f"Nombre del archivo [snapshot_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}]: ")
+                    snapshotmkr.crear_snapshot_sistema(nombre, formato)
+                    input("\nPresiona Enter para volver...")
 
         elif opcion == "4":
             print("\n[+] Iniciando recolección de datos...")
