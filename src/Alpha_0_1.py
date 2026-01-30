@@ -1,3 +1,4 @@
+
 import psutil, datetime
 import wmi
 
@@ -26,14 +27,54 @@ def monitoreo_envivo():
         print(f"RED: Enviado: {v_net.bytes_sent / (1024**2):.2f} MB | Recibido: {v_net.bytes_recv / (1024**2):.2f} MB")
         print("-" * 13)
 
-        # 3. GRÁFICOS
+        # 3. GRÁFICOS E INFORMACIÓN DE LA CPU
         print("--- GRÁFICOS ---")
         for gpu in c.Win32_VideoController():
             v_vram = abs(int(gpu.AdapterRAM)) / (1024**2) if gpu.AdapterRAM else 0
             print(f"GPU: {gpu.Name} | VRAM: {v_vram:.2f} MB")
         print("-" * 13)
 
-        # 4. ALMACENAMIENTO
+        print("--- INFORMACIÓN DE LA CPU ---")
+        for processor in c.Win32_Processor():
+            print(f"== PROCESADOR: {processor.Name.strip()} ==")
+            print(f"Fabricante: {processor.Manufacturer}")
+            print(f"Núcleos: {processor.NumberOfCores}")
+            print(f"Procesadores lógicos: {processor.NumberOfLogicalProcessors}")
+            print(f"Arquitectura: {processor.AddressWidth} bits")
+            print(f"Velocidad actual: {processor.CurrentClockSpeed} MHz")
+            print(f"Velocidad máxima: {processor.MaxClockSpeed} MHz")
+            print(f"Socket: {processor.SocketDesignation}")
+            print(f"ID: {processor.ProcessorId}")
+            print(f"Nivel de caché L2: {processor.L2CacheSize} KB")
+            print(f"Nivel de caché L3: {processor.L3CacheSize} KB")
+        print("-" * 50)
+    
+        # 4. Ventilador (La librería WMI tiene limitaciones y LibreHardware requiere más trabajo de implementar)
+        fan_speeds = {}
+        try:
+            for fan in c.Win32_Fan():
+                if fan.DescriptiveName:  # Verificar que tenga nombre
+                # DesiredSpeed es la velocidad deseada/actual
+                    fan_speeds[fan.DescriptiveName] = fan.DesiredSpeed
+        except:
+            pass  # Si no existe la clase, continuamos
+    
+        for sensor in c.Win32_TemperatureProbe():
+         # Buscamos sensores que mencionen "fan" en el nombre
+            if "fan" in sensor.Name.lower():
+                # CurrentReading es la lectura actual
+                fan_speeds[sensor.Name] = sensor.CurrentReading
+        
+        speeds = fan_speeds
+    
+        if speeds:
+            print("Ventiladores encontrados:")
+            for fan, speed in speeds.items():
+                print(f"  {fan}: {speed} RPM")
+        else:
+         print("No se encontraron datos de ventiladores, es posible que su hardware no exponga datos mediante WMI")
+
+        # 5. ALMACENAMIENTO
         print("\n--- ALMACENAMIENTO ---")
         for disco in c.Win32_LogicalDisk(DriveType=3):
             d_total = int(disco.Size) / (1024**3)
@@ -45,12 +86,12 @@ def monitoreo_envivo():
         print(f"Actividad I/O: Lectura: {v_disk_io.read_bytes / (1024**2):.2f} MB | Escritura: {v_disk_io.write_bytes / (1024**2):.2f} MB")
         print("-" * 13)
 
-        # 5. RESUMEN DE EJECUCIÓN
+        # 6. RESUMEN DE EJECUCIÓN
         pids = psutil.pids()
         print(f"Procesos activos: {len(pids)} | Cambios de Contexto: {v_stats.ctx_switches}")
         print(f"MEMORIA SWAP: {v_swap.percent}% usado ({v_swap.free / (1024**3):.2f} GB libres)")
 
-        # 6. TIEMPO ACTIVO Y USUARIOS
+        # 7. TIEMPO ACTIVO Y USUARIOS
         uptime = datetime.datetime.now() - datetime.datetime.fromtimestamp(v_boot_time)
         print(f"TIEMPO ACTIVO: {str(uptime).split('.')[0]}")
 
@@ -58,7 +99,7 @@ def monitoreo_envivo():
         if usuarios:
             print(f"USUARIOS ACTIVOS: {', '.join([u.name for u in usuarios])}")
         
-        # 7. TEMPERATURA (Sub-bloque protegido)
+        # 8. TEMPERATURA (Sub-bloque protegido)
         try:
             w_temp = wmi.WMI(namespace="root\\wmi")
             temp_raw = w_temp.MSAcpi_ThermalZoneTemperature()
@@ -68,7 +109,7 @@ def monitoreo_envivo():
         except:
             print("TEMPERATURA: No disponible (requiere Admin)")
 
-        # 8. ANÁLISIS DE ANOMALÍAS (El Semáforo)
+        # 9. ANÁLISIS DE ANOMALÍAS (El Semáforo)
         print("\n>>> ANÁLISIS SEMÁNTICO:")
         if v_ram.percent > 85 or d_libre_C < 5:
             print("🔴 ESTADO: CRÍTICO - Recursos agotados.")
