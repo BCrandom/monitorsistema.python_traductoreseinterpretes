@@ -34,22 +34,15 @@ def mostrar_menu():
     print("1. [CORE] Monitoreo en Tiempo Real (CPU/RAM/Disco)")
     print("2. [CORE] Ver Top 5 Procesos (Consumo Crítico)")
     print("3. [ANALISIS] Snapshot del Sistema (Uptime/Hilos)")
-<<<<<<< HEAD
-    print("4. [DATOS] Configurar Guardado Automático (CSV)")
-    print("5. [REPORTE] Generar Informe PDF de Anomalías")
-    print("6. Salir")
-    print(" ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 5)
-    #print("==========================================")
-=======
     print("4. [REPORTE] Generar Informe PDF de Anomalías")
     print("5. Salir")
-    print("==========================================")
->>>>>>> fff4e4b62e0ef27e8abfa94440dbe825afac1b71
+    print(" ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 5)
+    #print("==========================================")
         
 def menu_principal():
     while True:
         mostrar_menu()
-        opcion = input("Seleccione una opción (1-6): ")
+        opcion = input("Seleccione una opción (1-5): ")
 
         if opcion == "1":
             print("\nIniciando monitoreo... (Ctrl+C para volver)")
@@ -64,10 +57,6 @@ def menu_principal():
         elif opcion == "3":
             print("\nCapturando estado del sistema...")
             input("\nPresiona Enter para volver...")
-
-        elif opcion == "4":
-            print("\nConfigurando registro en segundo plano...")
-            input("\nConfiguración guardada. Presiona Enter...")
 
         elif opcion == "4":
             print("\n[+] Iniciando recolección de datos...")
