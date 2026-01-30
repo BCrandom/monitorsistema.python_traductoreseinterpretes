@@ -152,6 +152,25 @@ def obtener_datos_reporte():
     v_boot_time = psutil.boot_time()
     v_disk_io = psutil.disk_io_counters()
     cpu_f = psutil.cpu_percent(interval=1.0)
+    processor = c.Win32_Processor()[0]
+    
+    fan_data = []
+    try:
+        # Intento 1: Clase Win32_Fan
+        for fan in c.Win32_Fan():
+            nombre = fan.DescriptiveName if fan.DescriptiveName else "Ventilador Sistema"
+            velocidad = fan.DesiredSpeed if fan.DesiredSpeed else "N/A"
+            fan_data.append(f"{nombre}: {velocidad} RPM")
+            
+        # Intento 2: Sensores que mencionen "fan"
+        for sensor in c.Win32_TemperatureProbe():
+            if sensor.Name and "fan" in sensor.Name.lower():
+                fan_data.append(f"{sensor.Name}: {sensor.CurrentReading} RPM")
+    except:
+        pass
+    
+    # Convertimos la lista a un string o mensaje por defecto
+    ventiladores_str = " | ".join(fan_data) if fan_data else "No detectados por WMI"
     
     # ESTE BLOQUE AHORA TIENE SANGRIÓN (4 ESPACIOS)
     datos = {
@@ -159,6 +178,16 @@ def obtener_datos_reporte():
         "os_caption": c.Win32_OperatingSystem()[0].Caption,
         "os_version": c.Win32_OperatingSystem()[0].Version,
         "cpu_name": c.Win32_Processor()[0].Name,
+        "cpu_manufacturer": processor.Manufacturer,
+        "cpu_cores": processor.NumberOfCores,
+        "cpu_logical": processor.NumberOfLogicalProcessors,
+        "cpu_bits": processor.AddressWidth,
+        "cpu_speed_cur": processor.CurrentClockSpeed,
+        "cpu_speed_max": processor.MaxClockSpeed,
+        "cpu_socket": processor.SocketDesignation,
+        "cpu_id": processor.ProcessorId,
+        "cpu_l2": processor.L2CacheSize,
+        "cpu_l3": processor.L3CacheSize,
         # Sección 2
         "red_env": f"{v_net.bytes_sent / (1024**2):.2f} MB",
         "red_rec": f"{v_net.bytes_recv / (1024**2):.2f} MB",

@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from reportes import GeneradorReporte 
+from core import recolector
 import Alpha_0_1
 
 def limpiar_pantalla():
@@ -51,7 +52,7 @@ def menu_principal():
         
         elif opcion == "2":
             print("\nBuscando procesos pesados...")
-            # recolector.obtener_top_procesos() # Asegúrate de que recolector esté importado
+            recolector.obtener_top_procesos() 
             input("\nPresiona Enter para volver...")
 
         elif opcion == "3":
@@ -60,9 +61,14 @@ def menu_principal():
 
         elif opcion == "4":
             print("\n[+] Iniciando recolección de datos...")
-            # TODO ESTE BLOQUE DEBE ESTAR INDENTADO DENTRO DE LA OPCION 5
+            # TODO ESTE BLOQUE DEBE ESTAR INDENTADO DENTRO DE LA OPCION 4
             try:
                 datos = Alpha_0_1.obtener_datos_reporte() 
+                mem_sorted, top_5= recolector.obtener_top_procesos(imprimir=False)
+                
+                # 3. Juntamos TODO en el mismo diccionario
+                datos["mem_sorted"] = mem_sorted
+                datos["top_5"] = top_5
                 
                 print("[+] Generando archivo PDF...")
                 reporte = GeneradorReporte(datos)

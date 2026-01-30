@@ -1,1 +1,1 @@
-from .recolector import monitoreo_vivo, obtener_top_procesos
+from .recolector import monitoreo_vivo, obtener_top_procesos,obtener_top_procesos_lista
