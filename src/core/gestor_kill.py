@@ -17,7 +17,9 @@ LISTA_BLANCA_NOMBRES = [
 RUTAS_PROTEGIDAS = ["C:\\Windows\\System32", "C:\\Windows\\SysWOW64"]
 
 def listar_candidatos_eliminacion():
-    table = Table(title="[bold red]PROCESOS DE ALTO CONSUMO (MODO GESTIÓN)[/]", 
+    num_nucleos_fisicos = psutil.cpu_count(logical=False)
+    num_nucleos_logicos = psutil.cpu_count(logical=True)
+    table = Table(title="[bold red]PROCESOS DE ALTO CONSUMO (MODO GESTIÓN) - [/]", 
                   border_style="red", header_style="bold yellow")
     
     table.add_column("PID", justify="right", style="cyan")
@@ -31,24 +33,26 @@ def listar_candidatos_eliminacion():
     # --- NUEVA ESTRATEGIA: MUESTREO POR BLOQUE ---
     with console.status("[bold yellow]Muestreando actividad del procesador (1s)...[/]"):
         # 1. Obtenemos la lista de procesos una sola vez
-        procs = [p for p in psutil.process_iter(['pid', 'name', 'exe', 'memory_percent'])]
+        procesos_activos = []
+        for p in psutil.process_iter(['pid', 'name', 'exe', 'memory_percent']):
+            try:
+                # El primer llamado "prepara" el contador interno del objeto
+                p.cpu_percent(interval=None)
+                procesos_activos.append(p)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
         
-        # 2. Primera lectura de CPU para todos (inicia el contador)
-        for p in procs:
-            try: p.cpu_percent(interval=None)
-            except: continue
-            
-        # 3. ESPERA REAL: 1 segundo completo es el estándar para obtener datos que no sean 0
-        time.sleep(1.0)
+        # 2. Una espera corta pero suficiente (0.5s a 1s basta para psutil)
+        time.sleep(0.5)
 
-    # 4. Segunda lectura y filtrado
-    for p in procs:
+    for p in procesos_activos:
         try:
-            # Aquí obtenemos el CPU acumulado en ese segundo de espera
-            cpu = p.cpu_percent(interval=None)
-            # Normalizamos manualmente si el valor es muy alto (por núcleos)
-            cpu_norm = cpu / psutil.cpu_count()
+            # 3. El segundo llamado ahora sí tiene una referencia temporal previa
+            cpu_total = p.cpu_percent(interval=None)
             
+            # 4. OPCIONAL: Mostrar el valor real por núcleo o el normalizado
+            cpu_norm = cpu_total / psutil.cpu_count() 
+
             info = p.info
             mem = info['memory_percent']
             path = info['exe'] or ""
@@ -60,7 +64,7 @@ def listar_candidatos_eliminacion():
             )
 
             # Si el CPU es mayor a 0.0 o la RAM es significativa, lo mostramos
-            if not es_vital and (cpu > 0.0 or mem > 1.0):
+            if not es_vital and (cpu_norm > 0.0 or mem > 1.0):
                 riesgo = "[green]BAJO[/]" if cpu_norm < 10 else "[bold yellow]MEDIO[/]"
                 if cpu_norm > 30: riesgo = "[bold red]ALTO[/]"
                 
