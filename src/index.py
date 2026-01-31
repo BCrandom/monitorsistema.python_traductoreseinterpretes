@@ -12,6 +12,7 @@ from rich.align import Align
 from rich.text import Text
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.console import Group  # Necesario para agrupar elementos
+from core import gestor_kill
 
 if sys.platform == "win32":
     os.system('') 
@@ -66,12 +67,13 @@ def mostrar_menu():
     console.print(f"\n[{ADORN_COLOR}]    ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 6 + "[/]\n")
     
     # Opciones
-    console.print(f"  [{MARCO_COLOR}][/] [white]Seleccione una opcion del (1-5)[/]")
+    console.print(f"  [{MARCO_COLOR}][/] [white]Seleccione una opcion del (1-6)[/]")
     console.print(f"  [{MARCO_COLOR}]1.[/] [white][CORE] Monitoreo en Tiempo Real[/]")
     console.print(f"  [{MARCO_COLOR}]2.[/] [white][CORE] Ver Top 5 Procesos[/]")
     console.print(f"  [{MARCO_COLOR}]3.[/] [white][ANALISIS] Snapshot del Sistema[/]")
     console.print(f"  [{MARCO_COLOR}]4.[/] [white][REPORTE] Generar Informe PDF[/]")
-    console.print(f"  [bold red]5. Salir[/]")
+    console.print(f"  [{MARCO_COLOR}]5.[/] [red][kill] eliminar procesos[/]")
+    console.print(f"  [bold red]6. Salir[/]")
     
     console.print(f"\n[{SYS_COLOR}]>>>>[/] " + f"[{ADORN_COLOR}]+--+  [/]" * 8)
 
@@ -144,8 +146,11 @@ def menu_principal():
             except Exception as e:
                 console.print(f"\n[bold red][ERROR]: {e}[/]")
                 input("\nPresiona Enter para volver...")
-
         elif opcion == "5":
+
+            gestor_kill.eliminar_proceso_seguro()
+
+        elif opcion == "6":
             console.print(f"\n[{SNAP_COLOR}]Cerrando SNAP SYS...[/]")
             sys.exit()
         else:
