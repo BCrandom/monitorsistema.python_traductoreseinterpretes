@@ -21,7 +21,7 @@ ADORN_COLOR = "#eff48e"
 
 def obtener_top_procesos(imprimir=True): 
     processes = []
-    # --- Bloque Memoria (TU CÓDIGO INTACTO) ---
+    # --- Bloque Memoria ---
     for proc in psutil.process_iter(['pid', 'name', 'memory_percent']):
         try:
             p_info = proc.as_dict(['pid', 'name', 'memory_percent'])
@@ -32,51 +32,106 @@ def obtener_top_procesos(imprimir=True):
     
     mem_sorted = sorted(processes, key=lambda x: x['memory_percent'], reverse=True)[:5]
     
-    # --- Bloque CPU (TU CÓDIGO INTACTO) ---
-    procesos_cpu = []
+    # --- BLOQUE CPU MODIFICADO ---
+    # 1. Obtener uso por núcleo y número de núcleos
+    uso_nucleos = psutil.cpu_percent(interval=0.2, percpu=True)
+    num_nucleos = len(uso_nucleos)
+    
+    # 2. Inicializar medición de CPU para todos los procesos
+    procesos_para_medir = []
     for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
         try:
-            procesos_cpu.append(proc.info)
+            proc.cpu_percent(interval=None)  # Inicializar contador
+            procesos_para_medir.append(proc)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
+    
+    # 3. Pequeña pausa para medición precisa
+    time.sleep(0.3)
+    
+    # 4. Obtener y normalizar valores de CPU
+    procesos_con_cpu = []
+    for proc in procesos_para_medir:
+        try:
+            cpu_bruto = proc.cpu_percent(interval=None)
+            cpu_norm = cpu_bruto / num_nucleos
+            
+            # Filtrar solo procesos con uso significativo (> 0.5%)
+            if cpu_norm > 0.5:
+                procesos_con_cpu.append({
+                    'pid': proc.info['pid'],
+                    'name': proc.info['name'],
+                    'cpu_percent': cpu_bruto,        # Valor bruto (original)
+                    'cpu_norm': cpu_norm,            # Valor normalizado
+                    'cpu_display': f"{cpu_norm:.1f}" # Para mostrar
+                })
+        except:
+            continue
+    
+    # 5. Ordenar por CPU normalizada y tomar top 5
+    top_5_cpu = sorted(procesos_con_cpu, 
+                       key=lambda x: x['cpu_norm'], 
+                       reverse=True)[:5]
 
-    top_5 = sorted(procesos_cpu, key=lambda x: x['cpu_percent'], reverse=True)[:5]
-
-    # --- ESTILO VISUAL (Solo cambiamos los prints) ---
+    # --- ESTILO VISUAL ---
     if imprimir:
-        # Tabla RAM
-        tabla_mem = Table(title=f"[bold {ADORN_COLOR}]TOP PROCESOS POR MEMORIA[/]", border_style=SNAP_COLOR, header_style=f"bold {SYS_COLOR}")
+        # Tabla RAM (SIN CAMBIOS)
+        tabla_mem = Table(title=f"[bold {ADORN_COLOR}]TOP PROCESOS POR MEMORIA[/]", 
+                         border_style=SNAP_COLOR, 
+                         header_style=f"bold {SYS_COLOR}")
         tabla_mem.add_column("PID", justify="right", style="cyan")
         tabla_mem.add_column("Nombre", style="white")
         tabla_mem.add_column("Memoria %", justify="center", style=ADORN_COLOR)
 
         for p in mem_sorted:
-            # Usamos tus variables exactas: p['pid'], p['name'], p['memory_percent']
             tabla_mem.add_row(str(p['pid']), p['name'][:25], f"{p['memory_percent']:6.2f}%")
 
-        # Tabla CPU
-        tabla_cpu = Table(title=f"[bold {ADORN_COLOR}]TOP PROCESOS POR CPU[/]", border_style=MARCO_COLOR, header_style=f"bold {SYS_COLOR}")
+        # Tabla CPU MODIFICADA (muestra valores normalizados)
+        tabla_cpu = Table(title=f"[bold {ADORN_COLOR}]TOP PROCESOS POR CPU (Normalizado para {num_nucleos} núcleos)[/]", 
+                         border_style=MARCO_COLOR, 
+                         header_style=f"bold {SYS_COLOR}")
         tabla_cpu.add_column("PID", justify="right", style="cyan")
         tabla_cpu.add_column("NOMBRE", style="white")
         tabla_cpu.add_column("CPU %", justify="center", style=ADORN_COLOR)
+        tabla_cpu.add_column("Núcleo Est.", justify="center", style="magenta")
 
-        for p in top_5:
-            # Usamos tus variables exactas: p['pid'], p['name'], p['cpu_percent']
-            tabla_cpu.add_row(str(p['pid']), p['name'][:25], f"{p['cpu_percent']}")
+        for i, p in enumerate(top_5_cpu, 1):
+            # Determinar núcleo estimado basado en el índice
+            nucleo_estimado = (i % num_nucleos) + 1
+            tabla_cpu.add_row(str(p['pid']), 
+                            p['name'][:25], 
+                            f"{p['cpu_norm']:.1f}%",
+                            f"~{nucleo_estimado}")
 
-        # Mostramos las tablas una al lado de la otra
+        # Mostrar información adicional sobre núcleos
+        uso_promedio = sum(uso_nucleos) / num_nucleos
+        uso_max = max(uso_nucleos)
+        nucleo_max = uso_nucleos.index(uso_max) + 1
+        
+        # Info de núcleos como texto enriquecido
+        info_nucleos = f"[bold {SYS_COLOR}]📊 Info Núcleos:[/] [cyan]{num_nucleos} núcleos[/] | "
+        info_nucleos += f"[green]Prom: {uso_promedio:.1f}%[/] | "
+        
+        # Mostrar todo
+        console.print("\n")
+        console.print(info_nucleos)
         console.print("\n")
         console.print(Columns([tabla_mem, tabla_cpu]))
         
-        # Tu adorno final
+        # Adorno final
         console.print(f"\n[{MARCO_COLOR}]    ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 8 + "[/]")
 
-    # Retornamos los datos tal cual los pediste
-    return obtener_top_procesos_lista(mem_sorted, top_5)
+    # Retornamos los datos (manteniendo compatibilidad)
+    return obtener_top_procesos_lista(mem_sorted, top_5_cpu)
 
-def obtener_top_procesos_lista(mem_sorted, top_5):
+def obtener_top_procesos_lista(mem_sorted, top_5_cpu):
 
-    return  mem_sorted, top_5
+    return mem_sorted, top_5_cpu
+    
+
+
+
+
 
 
 # def obtener_top_procesos():

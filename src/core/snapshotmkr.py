@@ -6,6 +6,7 @@ import platform
 import json
 import wmi
 import os
+import time
 
 def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
     """
@@ -140,11 +141,59 @@ def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
         # Ordenar y tomar top
         top_cpu = sorted(procesos, key=lambda x: x.get('cpu_percent', 0), reverse=True)[:5]
         top_mem = sorted(procesos, key=lambda x: x.get('memory_percent', 0), reverse=True)[:5]
+
+        
         
         snapshot['procesos'] = {
             'total_procesos': len(psutil.pids()),
             'top_10_cpu': top_cpu,
             'top_10_memoria': top_mem
+        }
+
+            # --- BLOQUE CPU MODIFICADO ---
+        # . Obtener uso por núcleo y número de núcleos
+        uso_nucleos = psutil.cpu_percent(interval=0.2, percpu=True)
+        num_nucleos = len(uso_nucleos)
+        
+        # . Inicializar medición de CPU para todos los procesos
+        procesos_para_medir = []
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+            try:
+                proc.cpu_percent(interval=None)  # Inicializar contador
+                procesos_para_medir.append(proc)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        
+        # . Pequeña pausa para medición precisa
+        time.sleep(0.3)
+        
+        # . Obtener y normalizar valores de CPU
+        procesos_con_cpu = []
+        for proc in procesos_para_medir:
+            try:
+                cpu_bruto = proc.cpu_percent(interval=None)
+                cpu_norm = cpu_bruto / num_nucleos
+                
+                # Filtrar solo procesos con uso significativo (> 0.5%)
+                if cpu_norm > 0.5:
+                    procesos_con_cpu.append({
+                        'pid': proc.info['pid'],
+                        'name': proc.info['name'],
+                        'cpu_percent': cpu_bruto,        # Valor bruto (original)
+                        'cpu_norm': cpu_norm,            # Valor normalizado
+                        'cpu_display': f"{cpu_norm:.1f}" # Para mostrar
+                    })
+            except:
+                continue
+        
+        # . Ordenar por CPU normalizada y tomar top 5
+        top_5_cpu = sorted(procesos_con_cpu, 
+                        key=lambda x: x['cpu_norm'], 
+                        reverse=True)[:5]
+        
+        snapshot['procesos_con_cpu'] = {
+            'total_procesos': len(psutil.pids()),
+            'top_5_cpu': top_5_cpu
         }
         
         # 7. INFORMACIÓN DE TIEMPO
@@ -249,9 +298,16 @@ def guardar_snapshot(snapshot, nombre_archivo, formato='txt'):
                 # Procesos
                 f.write("\n5. TOP 5 PROCESOS POR CPU:\n")
                 f.write("-"*40 + "\n")
-                for i, proc in enumerate(snapshot['procesos']['top_10_cpu'][:5], 1):
-                    f.write(f"  {i}. {proc['name']} (PID: {proc['pid']}) - CPU: {proc.get('cpu_percent', 0)}%\n")
+                num_nucleos = len(snapshot['rendimiento']['cpu']['porcentaje_por_nucleo'])
+
+                # Mostrar hasta 5 procesos
+                for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
+                    # Calcular núcleo estimado (igual que en recolector.py)
+                    nucleo_estimado = (i % num_nucleos) + 1 if num_nucleos > 0 else "N/A"
                 
+                    # Mostrar proceso con núcleo estimado
+                    f.write(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU (Núcleo ~{nucleo_estimado})\n")
+
                 # Salud del sistema
                 f.write("\n6. ANÁLISIS DE SALUD:\n")
                 f.write("-"*40 + "\n")
@@ -298,9 +354,18 @@ def mostrar_snapshot_pantalla(snapshot):
     
     print(f"\n👤 USUARIOS: {len(snapshot['usuarios'])} conectados")
     
-    print(f"\n🔝 TOP 3 PROCESOS (CPU):")
-    for i, proc in enumerate(snapshot['procesos']['top_10_cpu'][:3], 1):
-        print(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_percent', 0):5.1f}% CPU")
+    print(f"\n🔝 TOP 5 PROCESOS (CPU):")
+    num_nucleos = len(snapshot['rendimiento']['cpu']['porcentaje_por_nucleo'])
+
+    # Mostrar hasta 5 procesos
+    for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
+        # Calcular núcleo estimado (igual que en recolector.py)
+        nucleo_estimado = (i % num_nucleos) + 1 if num_nucleos > 0 else "N/A"
+    
+        # Mostrar proceso con núcleo estimado
+        print(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU (Núcleo ~{nucleo_estimado})")
+    #for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
+       # print(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU")
     
     print(f"\n📊 ESTADO DEL SISTEMA:")
     if snapshot['salud_sistema']['recomendaciones']:
