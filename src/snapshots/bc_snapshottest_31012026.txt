@@ -1,0 +1,54 @@
+============================================================
+SNAPSHOT DEL SISTEMA - 2026-01-31 19:30:11
+============================================================
+
+1. INFORMACIÓN DEL SISTEMA:
+----------------------------------------
+  Hostname: DESKTOP-GLU016E
+  Sistema Operativo: Windows
+  Version Os: 10.0.26100
+  Arquitectura: 64bit
+  Procesador: Intel64 Family 6 Model 142 Stepping 10, GenuineIntel
+  Maquina: AMD64
+  Os Caption: Microsoft Windows 11 Pro
+  Os Version: 10.0.26100
+
+2. PROCESADOR:
+----------------------------------------
+  Nombre: Intel(R) Core(TM) i5-8350U CPU @ 1.70GHz
+  Fabricante: GenuineIntel
+  Nucleos: 4
+  Procesadores Logicos: 8
+  Velocidad Actual Mhz: 1696
+  Velocidad Max Mhz: 1896
+  Arquitectura Bits: 64 bits
+  Cache L2 Kb: 1024
+  Cache L3 Kb: 6144
+  Socket: U3E1
+
+3. RENDIMIENTO ACTUAL:
+----------------------------------------
+  CPU Total: 14.9%
+  RAM Usada: 83.5%
+  Swap Usado: 23.0%
+
+4. ALMACENAMIENTO:
+----------------------------------------
+  C:\: 39.0% usado (144.92 GB libre de 237.39 GB)
+
+5. TOP 5 PROCESOS POR CPU:
+----------------------------------------
+   1. System Idle Process  -  82.6% CPU (Núcleo ~2)
+   2. python.exe           -   9.2% CPU (Núcleo ~3)
+   3. audiodg.exe          -   0.9% CPU (Núcleo ~4)
+   4. dwm.exe              -   0.7% CPU (Núcleo ~5)
+   5. chrome.exe           -   0.7% CPU (Núcleo ~6)
+
+6. ANÁLISIS DE SALUD:
+----------------------------------------
+  ⚠️  RECOMENDACIONES:
+    • RAM con uso elevado. Considerar cerrar aplicaciones.
+
+============================================================
+Snapshot generado el: 2026-01-31 19:30:11
+============================================================
