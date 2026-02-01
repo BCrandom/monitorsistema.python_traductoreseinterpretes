@@ -95,21 +95,36 @@ def menu_principal():
             input("\nPresiona Enter para volver...")
 
         elif opcion == "3":
-            console.print(f"\n[{SYS_COLOR}][+][/] Capturando estado...")
-            # Crear snapshot
-            snapshot = snapshotmkr.crear_snapshot_sistema()
+            with console.status(f"[bold {SYS_COLOR}]🔍 Accediendo a sensores...[/]", spinner="dots"):
+                # Crear snapshot
+                snapshot = snapshotmkr.crear_snapshot_sistema()
     
             if snapshot:
-                # Mostrar en pantalla
+                # Mostrar en pantalla con el nuevo estilo Rich que definimos
                 snapshotmkr.mostrar_snapshot_pantalla(snapshot)
                 
-                # Preguntar si quiere guardar
-                guardar = input("\n¿Desea guardar el snapshot? (s/n): ").lower()
+                # --- INTERACCIÓN ESTILIZADA ---
+                console.print(f"\n[{MARCO_COLOR}]┌─[[/][bold white] ¿Desea exportar este reporte? [/][{MARCO_COLOR}]] [/]")
+                guardar = console.input(f"[{MARCO_COLOR}]└─> [/][{ADORN_COLOR}](s/n): [/]").lower()
+
                 if guardar == 's':
-                    formato = input("Formato (txt/json) [txt]: ").lower() or 'txt'
-                    nombre = input(f"Nombre del archivo [snapshot_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}]: ")
-                    snapshotmkr.crear_snapshot_sistema(nombre, formato)
-                    input("\nPresiona Enter para volver...")
+                    console.print(f"\n[{ADORN_COLOR}]📂 Formato de salida (txt/json):[/]")
+                    formato = console.input(f"[{MARCO_COLOR}]>> [/][white][txt]: [/]").lower() or 'txt'
+                    
+                    # Generar nombre sugerido por defecto
+                    sug_nombre = f"snapshot_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    
+                    console.print(f"[{ADORN_COLOR}]📛 Nombre del archivo (Enter para sugerido):[/]")
+                    nombre = console.input(f"[{MARCO_COLOR}]>> [/][white][{sug_nombre}]: [/]") or sug_nombre
+                    
+                    # Guardamos usando la función que ya tienes
+                    # Usamos los datos ya capturados para no volver a estresar el CPU
+                    snapshotmkr.guardar_snapshot(snapshot, nombre, formato)
+                    
+                    console.print(f"\n[bold green]✔ ¡Archivo generado exitosamente en la carpeta /snapshots![/]")
+                
+                console.print(f"\n[{SYS_COLOR}]⏎ Presiona Enter para volver al centro de mando...[/]")
+                input()
 
         elif opcion == "4":
             try:

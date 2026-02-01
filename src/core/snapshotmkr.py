@@ -1,3 +1,5 @@
+import os
+import sys
 import psutil
 import datetime
 from collections import OrderedDict
@@ -7,6 +9,24 @@ import json
 import wmi
 import os
 import time
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table  # <--- ESTA ES LA QUE FALTA
+from rich.columns import Columns
+from rich.text import Text
+from rich import box
+
+if sys.platform == "win32":
+    os.system('') 
+
+# Forzamos Truecolor y configuramos una sola instancia de consola
+console = Console(color_system="truecolor")
+
+# COLORES 
+SNAP_COLOR = "#3e978b"
+SYS_COLOR  = "#d2e603"
+MARCO_COLOR = "#2ec1ac"
+ADORN_COLOR = "#eff48e"
 
 def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
     """
@@ -331,48 +351,173 @@ def guardar_snapshot(snapshot, nombre_archivo, formato='txt'):
     except Exception as e:
         print(f"Error guardando snapshot: {e}")
 
-def mostrar_snapshot_pantalla(snapshot):
-    """Muestra el snapshot de forma legible en pantalla"""
+def guardar_snapshot(snapshot, nombre_archivo, formato='txt'):
+    """Guarda el snapshot en diferentes formatos"""
     
-    print("\n" + "="*70)
-    print(f"📸 SNAPSHOT DEL SISTEMA - {snapshot['timestamp']}")
-    print("="*70)
+    timestamp = snapshot['timestamp'].replace(':', '-').replace(' ', '_')
     
-    print(f"\n🖥️  SISTEMA: {snapshot['sistema'].get('hostname', 'N/A')}")
-    print(f"   OS: {snapshot['sistema'].get('os_caption', 'N/A')}")
-    
-    print(f"\n⚡ RENDIMIENTO:")
-    print(f"   CPU: {snapshot['rendimiento']['cpu']['porcentaje_uso']}% | ", end="")
-    print(f"RAM: {snapshot['rendimiento']['memoria']['porcentaje_usado']}% | ", end="")
-    print(f"Swap: {snapshot['rendimiento']['memoria']['swap_porcentaje']}%")
-    
-    print(f"\n💾 ALMACENAMIENTO:")
-    for part in snapshot['almacenamiento']['particiones'][:3]:  # Mostrar solo 3 particiones
-        print(f"   {part['punto_montaje']}: {part['porcentaje_usado']}% usado")
-    
-    print(f"   Procesos activos: {snapshot['procesos']['total_procesos']}")
-    
-    print(f"\n👤 USUARIOS: {len(snapshot['usuarios'])} conectados")
-    
-    print(f"\n🔝 TOP 5 PROCESOS (CPU):")
-    num_nucleos = len(snapshot['rendimiento']['cpu']['porcentaje_por_nucleo'])
+    if not nombre_archivo:
+        nombre_archivo = f"snapshot_{timestamp}"
 
-    # Mostrar hasta 5 procesos
+    # Crear carpeta 'snapshots' si no existe
+    CARPETA_SNAPSHOTS = "snapshots"
+    if not os.path.exists(CARPETA_SNAPSHOTS):
+        os.makedirs(CARPETA_SNAPSHOTS)
+
+    
+    try:
+        if formato == 'txt':
+            ruta_completa = os.path.join(CARPETA_SNAPSHOTS, f"{nombre_archivo}.txt")
+            with open(ruta_completa, 'w', encoding='utf-8') as f:
+                f.write("="*60 + "\n")
+                f.write(f"SNAPSHOT DEL SISTEMA - {snapshot['timestamp']}\n")
+                f.write("="*60 + "\n\n")
+                
+                # Sistema
+                f.write("1. INFORMACIÓN DEL SISTEMA:\n")
+                f.write("-"*40 + "\n")
+                for key, value in snapshot['sistema'].items():
+                    f.write(f"  {key.replace('_', ' ').title()}: {value}\n")
+                
+                # CPU Detallada
+                f.write("\n2. PROCESADOR:\n")
+                f.write("-"*40 + "\n")
+                if isinstance(snapshot['cpu_detallada'], dict):
+                    for key, value in snapshot['cpu_detallada'].items():
+                        f.write(f"  {key.replace('_', ' ').title()}: {value}\n")
+                
+                # Rendimiento
+                f.write("\n3. RENDIMIENTO ACTUAL:\n")
+                f.write("-"*40 + "\n")
+                f.write(f"  CPU Total: {snapshot['rendimiento']['cpu']['porcentaje_uso']}%\n")
+                f.write(f"  RAM Usada: {snapshot['rendimiento']['memoria']['porcentaje_usado']}%\n")
+                f.write(f"  Swap Usado: {snapshot['rendimiento']['memoria']['swap_porcentaje']}%\n")
+                
+                # Almacenamiento
+                f.write("\n4. ALMACENAMIENTO:\n")
+                f.write("-"*40 + "\n")
+                for part in snapshot['almacenamiento']['particiones']:
+                    f.write(f"  {part['punto_montaje']}: {part['porcentaje_usado']}% usado ")
+                    f.write(f"({part['libre_gb']} GB libre de {part['total_gb']} GB)\n")
+                
+                # Procesos
+                f.write("\n5. TOP 5 PROCESOS POR CPU:\n")
+                f.write("-"*40 + "\n")
+                num_nucleos = len(snapshot['rendimiento']['cpu']['porcentaje_por_nucleo'])
+
+                # Mostrar hasta 5 procesos
+                for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
+                    # Calcular núcleo estimado (igual que en recolector.py)
+                    nucleo_estimado = (i % num_nucleos) + 1 if num_nucleos > 0 else "N/A"
+                
+                    # Mostrar proceso con núcleo estimado
+                    f.write(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU (Núcleo ~{nucleo_estimado})\n")
+
+                # Salud del sistema
+                f.write("\n6. ANÁLISIS DE SALUD:\n")
+                f.write("-"*40 + "\n")
+                if snapshot['salud_sistema']['recomendaciones']:
+                    f.write("  ⚠️  RECOMENDACIONES:\n")
+                    for rec in snapshot['salud_sistema']['recomendaciones']:
+                        f.write(f"    • {rec}\n")
+                else:
+                    f.write("  ✅ Sistema en estado óptimo\n")
+                
+                f.write("\n" + "="*60 + "\n")
+                f.write(f"Snapshot generado el: {snapshot['timestamp']}\n")
+                f.write("="*60 + "\n")
+            print(f"Snapshot guardado en: snapshots/{nombre_archivo}.txt")
+
+        elif formato == 'json':
+            ruta_completa = os.path.join(CARPETA_SNAPSHOTS, f"{nombre_archivo}.json")
+            with open(ruta_completa, 'w', encoding='utf-8') as f:
+                json.dump(snapshot, f, indent=4, default=str)
+            print(f"Snapshot guardado en: snapshots/{nombre_archivo}.json")
+    except Exception as e:
+        print(f"Error guardando snapshot: {e}")
+def mostrar_snapshot_pantalla(snapshot):
+    """Muestra el snapshot con estilo Rich usando las llaves originales del diccionario"""
+    
+    # 1. Cabecera Principal
+    console.print("\n")
+    console.print(Panel(
+        f"[bold {ADORN_COLOR}]📸 SNAPSHOT DEL SISTEMA[/]\n[white]Generado el: {snapshot['timestamp']}[/]",
+        border_style=MARCO_COLOR,
+        expand=True,
+        title=f"[{SYS_COLOR}]REGISTRO DE ESTADO[/]",
+        title_align="left"
+    ))
+
+    # 2. Información de Sistema y Rendimiento (Lado a lado)
+    info_text = Text()
+    info_text.append(f"🖥️  Hostname: {snapshot['sistema'].get('hostname', 'N/A')}\n", style=SNAP_COLOR)
+    info_text.append(f"💿 OS: {snapshot['sistema'].get('os_caption', 'N/A')}\n", style="white")
+    info_text.append(f"👤 Usuarios: {len(snapshot['usuarios'])} conectados", style="white")
+
+    rend_table = Table(show_header=False, box=None)
+    cpu_p = snapshot['rendimiento']['cpu']['porcentaje_uso']
+    ram_p = snapshot['rendimiento']['memoria']['porcentaje_usado']
+    swp_p = snapshot['rendimiento']['memoria']['swap_porcentaje']
+    
+    # Colores dinámicos según el uso
+    cpu_style = "bold red" if cpu_p > 80 else ADORN_COLOR
+    
+    rend_table.add_row("⚡ [bold]CPU:[/]", f"[{cpu_style}]{cpu_p}%[/]")
+    rend_table.add_row("📊 [bold]RAM:[/]", f"[white]{ram_p}%[/]")
+    rend_table.add_row("🔄 [bold]Swap:[/]", f"[white]{swp_p}%[/]")
+
+    # Imprimir primera fila de paneles
+    console.print(Columns([
+        Panel(info_text, title=f"[{MARCO_COLOR}]SISTEMA[/]", border_style=MARCO_COLOR, expand=True),
+        Panel(rend_table, title=f"[{MARCO_COLOR}]RENDIMIENTO[/]", border_style=MARCO_COLOR, expand=True)
+    ]))
+
+    # 3. Almacenamiento y Procesos (Lado a lado)
+    # Tabla de Discos
+    disk_table = Table(box=box.SIMPLE, expand=True, header_style=f"bold {SYS_COLOR}")
+    disk_table.add_column("Montaje", style=SNAP_COLOR)
+    disk_table.add_column("Uso %", justify="right")
+    
+    for part in snapshot['almacenamiento']['particiones'][:3]:
+        disk_table.add_row(part['punto_montaje'], f"{part['porcentaje_usado']}%")
+
+    # Tabla de Top Procesos (Usando tus llaves exactas)
+    proc_table = Table(box=box.SIMPLE, expand=True, header_style=f"bold {SYS_COLOR}")
+    proc_table.add_column("Proceso", style="white")
+    proc_table.add_column("CPU%", justify="right")
+    proc_table.add_column("Núcleo", justify="center", style=ADORN_COLOR)
+
+    num_nucleos = len(snapshot['rendimiento']['cpu']['porcentaje_por_nucleo'])
+    
+    # Mapeo de procesos_con_cpu y top_5_cpu
     for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
-        # Calcular núcleo estimado (igual que en recolector.py)
         nucleo_estimado = (i % num_nucleos) + 1 if num_nucleos > 0 else "N/A"
-    
-        # Mostrar proceso con núcleo estimado
-        print(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU (Núcleo ~{nucleo_estimado})")
-    #for i, proc in enumerate(snapshot['procesos_con_cpu']['top_5_cpu'][:5], 1):
-       # print(f"   {i}. {proc['name'][:20]:20} - {proc.get('cpu_norm', 0):5.1f}% CPU")
-    
-    print(f"\n📊 ESTADO DEL SISTEMA:")
+        cpu_val = proc.get('cpu_norm', 0)
+        proc_table.add_row(
+            proc['name'][:15], 
+            f"{cpu_val:.1f}%", 
+            f"~{nucleo_estimado}"
+        )
+
+    console.print(Columns([
+        Panel(disk_table, title=f"[{MARCO_COLOR}]💾 ALMACENAMIENTO[/]", border_style=MARCO_COLOR, expand=True),
+        Panel(proc_table, title=f"[{MARCO_COLOR}]🔝 TOP 5 PROCESOS[/]", border_style=MARCO_COLOR, expand=True)
+    ]))
+
+    # 4. Estado de Salud y Diagnóstico
+    salud_text = Text()
     if snapshot['salud_sistema']['recomendaciones']:
-        print("   ⚠️  Atención requerida:")
+        salud_text.append("⚠️  ATENCIÓN REQUERIDA:\n", style="bold yellow")
         for rec in snapshot['salud_sistema']['recomendaciones'][:3]:
-            print(f"     • {rec}")
+            salud_text.append(f" • {rec}\n", style="white")
     else:
-        print("   ✅ Sistema saludable")
+        salud_text.append("✅ SISTEMA OPERANDO EN ESTADO ÓPTIMO", style="bold green")
+
+    console.print(Panel(
+        salud_text, 
+        title=f"[{MARCO_COLOR}]📊 DIAGNÓSTICO DE SALUD[/]", 
+        border_style=MARCO_COLOR,
+        subtitle=f"[{ADORN_COLOR}]Total Procesos: {snapshot['procesos']['total_procesos']}[/]"
+    ))
     
-    print("\n" + "="*70)
+    console.print(f"\n[{MARCO_COLOR}]    ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 8 + "[/]")
