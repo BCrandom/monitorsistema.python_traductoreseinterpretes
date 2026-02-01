@@ -2,37 +2,41 @@ import os
 import sys
 import time
 import datetime
+# Importación de módulos propios (Capas de Lógica y Reporte)
 from reportes import GeneradorReporte 
 from core import recolector
 from core import snapshotmkr
-import Alpha_0_1
+import Alpha_0_1 # Módulo de monitoreo en vivo
+# Librerías de Rich para una UI avanzada en terminal
 from rich.console import Console
 from rich.panel import Panel
 from rich.align import Align
 from rich.text import Text
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.console import Group  # Necesario para agrupar elementos
-from core import gestor_kill
-
+from core import gestor_kill # Módulo para finalizar procesos (Opción 5)
+# Configuración de compatibilidad para Windows (habilita colores ANSI)
 if sys.platform == "win32":
     os.system('') 
 
-# Forzamos Truecolor y configuramos una sola instancia de consola
+# Instancia global de consola con soporte de color de 24 bits
 console = Console(color_system="truecolor")
 
-# COLORES 
-SNAP_COLOR = "#3e978b"
-SYS_COLOR  = "#d2e603"
-MARCO_COLOR = "#2ec1ac"
-ADORN_COLOR = "#eff48e"
+# PALETA DE COLORES (Variables constantes para mantener consistencia visual)
+SNAP_COLOR = "#3e978b"  # Turquesa oscuro
+SYS_COLOR  = "#d2e603"  # Lima/Amarillo
+MARCO_COLOR = "#2ec1ac" # Turquesa brillante
+ADORN_COLOR = "#eff48e" # Crema/Amarillo claro
 
 def limpiar_pantalla():
+    # Limpia la terminal según el Sistema Operativo
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def mostrar_menu():
+     # Genera y renderiza el Banner ASCII y las opciones del menú
     limpiar_pantalla()
 
-    # Construcción del Logo con no_wrap=True para que NO se rompa al encoger
+    # Creación del logo ASCII con manejo de no_wrap para evitar deformaciones
     logo_text = Text(no_wrap=True) 
 
     logo_text.append("███████╗███╗   ██╗ █████╗ ██████╗     ", style=SNAP_COLOR)
@@ -48,8 +52,7 @@ def mostrar_menu():
     logo_text.append("╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝         ", style=SNAP_COLOR)
     logo_text.append("╚══════╝   ╚═╝   ╚══════╝", style=SYS_COLOR)
 
-    # Agrupamos para mantener la estructura interna
-    # Definimos un ancho fijo (width=80) para que el marco no colapse
+    # Empaquetado del logo en un Panel rígido (width=84) para evitar colapsos visuales
     banner_panel = Panel(
         Align.center(logo_text),
         title=f"[bold {ADORN_COLOR}]GROUP_#01[/]",
@@ -83,18 +86,18 @@ def menu_principal():
                 # Input con el color turquesa del marco
         console.print(f"\n[{MARCO_COLOR}]S01@SNAP_SYS[/]:[bold white]~[/]$ ", end="")
         opcion = input()
-        
-        if opcion == "1":
+        # --- LÓGICA DE RUTEO (Cada opción llama a una función del CORE) ---
+        if opcion == "1":# Monitoreo en vivo (Uso de CPU/RAM dinámico)
             console.print(f"\n[{SYS_COLOR}][+][/] Iniciando monitoreo...")
             Alpha_0_1.monitoreo_envivo()
             input("\nPresiona Enter para volver...")
         
-        elif opcion == "2":
+        elif opcion == "2":# Análisis de los 5 procesos más pesados
             console.print(f"\n[{SYS_COLOR}][+][/] Analizando procesos...")
             recolector.obtener_top_procesos() 
             input("\nPresiona Enter para volver...")
 
-        elif opcion == "3":
+        elif opcion == "3":# Foto instantánea del estado del sistema
             with console.status(f"[bold {SYS_COLOR}]🔍 Accediendo a sensores...[/]", spinner="dots"):
                 # Crear snapshot
                 snapshot = snapshotmkr.crear_snapshot_sistema()
@@ -102,7 +105,7 @@ def menu_principal():
             if snapshot:
                 # Mostrar en pantalla con el nuevo estilo Rich que definimos
                 snapshotmkr.mostrar_snapshot_pantalla(snapshot)
-                
+                # Interacción para guardar en TXT o JSON
                 # --- INTERACCIÓN ESTILIZADA ---
                 console.print(f"\n[{MARCO_COLOR}]┌─[[/][bold white] ¿Desea exportar este reporte? [/][{MARCO_COLOR}]] [/]")
                 guardar = console.input(f"[{MARCO_COLOR}]└─> [/][{ADORN_COLOR}](s/n): [/]").lower()
@@ -126,9 +129,9 @@ def menu_principal():
                 console.print(f"\n[{SYS_COLOR}]⏎ Presiona Enter para volver al centro de mando...[/]")
                 input()
 
-        elif opcion == "4":
+        elif opcion == "4":# Generación de informe profesional en PDF
             try:
-                # El bloque 'with' abre el contexto de la barra
+                # Uso de barra de progreso dinámica de Rich
                 with Progress(
                     SpinnerColumn(style=SYS_COLOR),
                     TextColumn(f"[{SNAP_COLOR}]" + "{task.description}"),
@@ -139,7 +142,7 @@ def menu_principal():
                     
                     # Esta línea debe tener UN NIVEL más de sangría que el 'with'
                     task = progress.add_task("Procesando...", total=3)
-                    
+                    # Paso 1: Recolección, Paso 2: Análisis, Paso 3: PDF
                     progress.update(task, description="Extrayendo métricas...")
                     datos = Alpha_0_1.obtener_datos_reporte()
                     progress.advance(task)
@@ -161,16 +164,16 @@ def menu_principal():
             except Exception as e:
                 console.print(f"\n[bold red][ERROR]: {e}[/]")
                 input("\nPresiona Enter para volver...")
-        elif opcion == "5":
+        elif opcion == "5":# Acceso al gestor de eliminación de procesos
 
             gestor_kill.eliminar_proceso_seguro()
 
-        elif opcion == "6":
+        elif opcion == "6": # Cierre seguro de la aplicación
             console.print(f"\n[{SNAP_COLOR}]Cerrando SNAP SYS...[/]")
             sys.exit()
         else:
             console.print("\n[bold yellow][!] Opción no válida.[/]")
             time.sleep(1.2)
-
+# Punto de entrada del script
 if __name__ == "__main__":
     menu_principal()

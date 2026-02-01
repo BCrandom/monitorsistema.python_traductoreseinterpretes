@@ -30,11 +30,14 @@ ADORN_COLOR = "#eff48e"
 
 def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
     """
+    Captura una 'fotografía' completa de todas las métricas del hardware y software.
+    Retorna un diccionario organizado con la información.
     Crea una instantánea completa del sistema
     formatos soportados: 'txt y json'
     """
     
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Usamos OrderedDict para asegurar que el archivo guardado mantenga un orden lógico
     snapshot = OrderedDict()
     snapshot['timestamp'] = timestamp
     
@@ -50,6 +53,7 @@ def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
         }
         
         # 2. INFORMACIÓN DE HARDWARE (usando WMI como en tu Alpha_0_1)
+        # Accedemos directamente al kernel de Windows para datos que psutil no ve
         try:
             c = wmi.WMI()
             for os_info in c.Win32_OperatingSystem():
@@ -243,7 +247,7 @@ def crear_snapshot_sistema(nombre_archivo=None, formato='txt'):
             'recomendaciones': []
         }
         
-        # Generar recomendaciones
+        # --- 6. ANÁLISIS DE SALUD (DIAGNÓSTICO AUTOMÁTICO) ---
         recomendaciones = []
         if snapshot['rendimiento']['cpu']['porcentaje_uso'] > 80:
             recomendaciones.append("CPU con uso elevado. Revisar procesos en top_cpu.")

@@ -20,16 +20,20 @@ ADORN_COLOR = "#eff48e"
 
 
 def obtener_top_procesos(imprimir=True): 
+    # Escanea, normaliza y clasifica los procesos con mayor consumo de RAM y CPU
     processes = []
-    # --- Bloque Memoria ---
+    # --- BLOQUE 1: RECOLECCIÓN DE MEMORIA RAM ---
+    # Iteramos sobre todos los procesos activos pidiendo solo los datos necesarios
     for proc in psutil.process_iter(['pid', 'name', 'memory_percent']):
         try:
             p_info = proc.as_dict(['pid', 'name', 'memory_percent'])
+            # Inicializamos el contador de CPU para este proceso (primera lectura)
             proc.cpu_percent(interval=None) 
             processes.append(p_info)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            # Ignoramos procesos que se cierran durante el escaneo o que están protegidos
             continue
-    
+    # Ordenamos de mayor a menor consumo de RAM y tomamos los primeros 5
     mem_sorted = sorted(processes, key=lambda x: x['memory_percent'], reverse=True)[:5]
     
     # --- BLOQUE CPU MODIFICADO ---
@@ -37,7 +41,7 @@ def obtener_top_procesos(imprimir=True):
     uso_nucleos = psutil.cpu_percent(interval=0.2, percpu=True)
     num_nucleos = len(uso_nucleos)
     
-    # 2. Inicializar medición de CPU para todos los procesos
+    # 2. Preparamos la lista de procesos para la medición de CPU
     procesos_para_medir = []
     for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
         try:
@@ -49,14 +53,15 @@ def obtener_top_procesos(imprimir=True):
     # 3. Pequeña pausa para medición precisa
     time.sleep(0.3)
     
-    # 4. Obtener y normalizar valores de CPU
+    # 4. Cálculo de Normalización: Ajustamos el valor bruto al total del sistema (0-100%)
     procesos_con_cpu = []
     for proc in procesos_para_medir:
         try:
             cpu_bruto = proc.cpu_percent(interval=None)
+            # Dividimos el total entre el número de núcleos (Normalización)
             cpu_norm = cpu_bruto / num_nucleos
             
-            # Filtrar solo procesos con uso significativo (> 0.5%)
+            # Filtramos procesos irrelevantes (menores al 0.5% de carga real)
             if cpu_norm > 0.5:
                 procesos_con_cpu.append({
                     'pid': proc.info['pid'],
@@ -68,7 +73,7 @@ def obtener_top_procesos(imprimir=True):
         except:
             continue
     
-    # 5. Ordenar por CPU normalizada y tomar top 5
+    # 5. Ordenamos por el valor normalizado para obtener el Top 5 real de CPU
     top_5_cpu = sorted(procesos_con_cpu, 
                        key=lambda x: x['cpu_norm'], 
                        reverse=True)[:5]
@@ -96,7 +101,7 @@ def obtener_top_procesos(imprimir=True):
         tabla_cpu.add_column("Núcleo Est.", justify="center", style="magenta")
 
         for i, p in enumerate(top_5_cpu, 1):
-            # Determinar núcleo estimado basado en el índice
+            # Estimamos en qué núcleo podría estar trabajando según su posición en la lista
             nucleo_estimado = (i % num_nucleos) + 1
             tabla_cpu.add_row(str(p['pid']), 
                             p['name'][:25], 
@@ -108,7 +113,7 @@ def obtener_top_procesos(imprimir=True):
         uso_max = max(uso_nucleos)
         nucleo_max = uso_nucleos.index(uso_max) + 1
         
-        # Info de núcleos como texto enriquecido
+        # Resumen estadístico de los núcleos del procesador
         info_nucleos = f"[bold {SYS_COLOR}]📊 Info Núcleos:[/] [cyan]{num_nucleos} núcleos[/] | "
         info_nucleos += f"[green]Prom: {uso_promedio:.1f}%[/] | "
         
@@ -129,19 +134,3 @@ def obtener_top_procesos_lista(mem_sorted, top_5_cpu):
     return mem_sorted, top_5_cpu
     
 
-
-
-
-
-
-# def obtener_top_procesos():
-   # print(f"\n{'PID':<10} {'NOMBRE':<25} {'CPU %':<10}")
-   # procesos = []
-   # for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-   #     try:
-    #        procesos.append(proc.info)
-    #    except (psutil.NoSuchProcess, psutil.AccessDenied):
-     #       continue
-    #top_5 = sorted(procesos, key=lambda x: x['cpu_percent'], reverse=True)[:5]
-    #for p in top_5:
-    #    print(f"{p['pid']:<10} {p['name'][:25]:<25} {p['cpu_percent']:<10}") 

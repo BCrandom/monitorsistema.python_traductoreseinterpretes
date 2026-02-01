@@ -1,14 +1,14 @@
 import os
 import sys
 import psutil, datetime
-import wmi
+import wmi # Interfaz de administración de Windows para acceso a hardware profundo
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.columns import Columns
 from rich.text import Text
 from rich import box
-
+# Configuración de compatibilidad de colores para la terminal de Windows
 if sys.platform == "win32":
     os.system('') 
 
@@ -24,23 +24,24 @@ ADORN_COLOR = "#eff48e"
 def monitoreo_envivo():
     d_libre_C = 0 
     try:
+# Inicialización de WMI (Windows Management Instrumentation)
         c = wmi.WMI()
-        # CAPTURA DE DATOS
-        v_ram = psutil.virtual_memory()
-        v_swap = psutil.swap_memory()
-        v_net = psutil.net_io_counters()
-        v_stats = psutil.cpu_stats()
-        v_boot_time = psutil.boot_time()
-        v_disk_io = psutil.disk_io_counters()
-        battery = psutil.sensors_battery()
-        cpu_p = psutil.cpu_percent(interval=1) # <--- ESTA LÍNEA DEBE ESTAR ARRIBA
+        # --- CAPTURA DE MÉTRICAS DINÁMICAS (PSUTIL) ---
+        v_ram = psutil.virtual_memory() # Estado de la memoria física
+        v_swap = psutil.swap_memory() # Estado del archivo de paginación
+        v_net = psutil.net_io_counters() # Tráfico de red (Enviado/Recibido)
+        v_stats = psutil.cpu_stats() # Estadísticas de llamadas al sistema
+        v_boot_time = psutil.boot_time() # Fecha/hora de encendido
+        v_disk_io = psutil.disk_io_counters() # Actividad de lectura/escritura en disco
+        battery = psutil.sensors_battery() # Estado de la batería
+        cpu_p = psutil.cpu_percent(interval=1)# Medición de carga de CPU (bloquea 1s para precisión)
 
         # --- PANEL 1: IDENTIDAD DEL SISTEMA ---
         sys_text = Text()
         for os_info in c.Win32_OperatingSystem():
             sys_text.append(f"OS: {os_info.Caption}\n", style=ADORN_COLOR)
             sys_text.append(f"Versión: {os_info.Version}\n", style="white")
-        
+        # Cálculo del tiempo de encendido (Uptime)
         uptime = datetime.datetime.now() - datetime.datetime.fromtimestamp(v_boot_time)
         sys_text.append(f"Uptime: {str(uptime).split('.')[0]}\n", style=SYS_COLOR)
         sys_text.append(f"Arranque: {datetime.datetime.fromtimestamp(v_boot_time).strftime('%Y-%m-%d %H:%M:%S')}", style="grey70")
@@ -49,11 +50,11 @@ def monitoreo_envivo():
 
         # --- PANEL 2: CPU DETALLADA (TODA LA INFO WMI) ---
         cpu_table = Table(show_header=False, box=None, padding=(0, 1))
-
+        #Semáforo visual para la carga del CPU
         color_carga = "green" if cpu_p < 70 else "yellow" if cpu_p < 85 else "red"
         cpu_table.add_row(f"[{SYS_COLOR}]USO ACTUAL DE CPU:[/]", f"[bold {color_carga}]{cpu_p}%[/]")
         cpu_table.add_row("", "") # Una línea de espacio para que respire el diseño
-
+        # Extracción de detalles del procesador desde el hardware
         for proc in c.Win32_Processor():
             cpu_table.add_row(f"[{SNAP_COLOR}]Nombre:[/]", proc.Name.strip())
             cpu_table.add_row(f"[{SNAP_COLOR}]Fabricante:[/]", proc.Manufacturer)
@@ -77,7 +78,7 @@ def monitoreo_envivo():
         
         p_mem = Panel(mem_net_table, title=f"[{MARCO_COLOR}]📊 MEMORIA & RED[/]", border_style=MARCO_COLOR, expand=True)
 
-        # Imprimir primera fila de paneles
+        # Renderizado de la primera fila (Layout horizontal)
         console.print(Columns([p_sys, p_cpu, p_mem]))
 
         # --- PANEL 4: ALMACENAMIENTO E I/O ---
@@ -86,7 +87,7 @@ def monitoreo_envivo():
         disk_table.add_column("Total")
         disk_table.add_column("Libre")
         disk_table.add_column("Uso I/O")
-
+        # Itera sobre discos físicos (DriveType=3 es Disco Local)
         for disco in c.Win32_LogicalDisk(DriveType=3):
             d_total = int(disco.Size) / (1024**3)
             d_libre = int(disco.FreeSpace) / (1024**3)
@@ -106,7 +107,7 @@ def monitoreo_envivo():
         for gpu in c.Win32_VideoController():
             v_vram = abs(int(gpu.AdapterRAM)) / (1024**2) if gpu.AdapterRAM else 0
             sensor_text.append(f"{gpu.Name} | VRAM: {v_vram:.2f} MB\n")
-        
+        # Bloque de Ventiladores con control de excepciones (Muchos sistemas no reportan esto)
         sensor_text.append("\n--- VENTILADORES ---\n", style=ADORN_COLOR)
         fan_found = False
         try:
@@ -117,7 +118,7 @@ def monitoreo_envivo():
         except: pass
         if not fan_found: sensor_text.append("No se detectan RPM (WMI Limitado)\n", style="grey50")
 
-        # Temperatura (Solo si hay acceso)
+        # Medición de Temperatura (Requiere permisos de Administrador y soporte ACPI)
         try:
             w_temp = wmi.WMI(namespace="root\\wmi")
             temp_raw = w_temp.MSAcpi_ThermalZoneTemperature()
@@ -144,7 +145,7 @@ def monitoreo_envivo():
             estado_bat = "🔌 Cargando" if battery.power_plugged else "🔋 Sin cargar"
             footer_text.append(f"BATERÍA: {battery.percent}% [{estado_bat}]\n", style=SYS_COLOR)
 
-        # Semáforo
+        # Evaluación lógica del estado del sistema
         if v_ram.percent > 85 or d_libre_C < 5:
             footer_text.append("🔴 ESTADO CRÍTICO: Recursos casi agotados.", style="bold red")
         elif v_ram.percent > 70:
@@ -159,6 +160,7 @@ def monitoreo_envivo():
 
     console.print(f"\n[{ADORN_COLOR}]    ₊˚.༄  " + "˚‧⁺  ･ ˖ ·" * 8 + "[/]")
 def obtener_datos_reporte():
+    # Recolecta toda la información y la empaqueta en un diccionario para el generador de PDF
     c = wmi.WMI()
     v_ram = psutil.virtual_memory()
     v_swap = psutil.swap_memory()
@@ -188,6 +190,7 @@ def obtener_datos_reporte():
     ventiladores_str = " | ".join(fan_data) if fan_data else "No detectados por WMI"
     
     # ESTE BLOQUE AHORA TIENE SANGRIÓN (4 ESPACIOS)
+        # Empaquetamiento de datos capturados
     datos = {
         # Sección 1
         "os_caption": c.Win32_OperatingSystem()[0].Caption,
@@ -229,5 +232,5 @@ def obtener_datos_reporte():
         "f_arranque": str(datetime.datetime.fromtimestamp(v_boot_time))
     }
     
-    # EL RETURN TAMBIÉN TIENE SANGRÍA
+    
     return datos

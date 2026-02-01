@@ -7,16 +7,21 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 console = Console()
-
+# --- ESCUDO DE PROTECCIÓN (LISTA BLANCA) ---
+# Procesos críticos que el programa jamás permitirá cerrar para evitar pantallazos azules (BSOD)
 LISTA_BLANCA_NOMBRES = [
     "system", "idle", "explorer.exe", "services.exe", "lsass.exe", 
     "wininit.exe", "smss.exe", "csrss.exe", "registry", "python.exe",
     "svchost.exe", "winlogon.exe", "system idle process"
 ]
-
+# Rutas del sistema que contienen archivos vitales
 RUTAS_PROTEGIDAS = ["C:\\Windows\\System32", "C:\\Windows\\SysWOW64"]
 
 def listar_candidatos_eliminacion():
+    """
+    Escanea el sistema y filtra procesos que consumen mucho pero no son vitales.
+    Implementa una técnica de muestreo diferencial de CPU.
+    """
     num_nucleos_fisicos = psutil.cpu_count(logical=False)
     num_nucleos_logicos = psutil.cpu_count(logical=True)
     table = Table(title="[bold red]PROCESOS DE ALTO CONSUMO (MODO GESTIÓN) - [/]", 
@@ -44,7 +49,7 @@ def listar_candidatos_eliminacion():
         
         # 2. Una espera corta pero suficiente (0.5s a 1s basta para psutil)
         time.sleep(0.5)
-
+    # Procesamiento y Filtrado
     for p in procesos_activos:
         try:
             # 3. El segundo llamado ahora sí tiene una referencia temporal previa
@@ -57,7 +62,7 @@ def listar_candidatos_eliminacion():
             mem = info['memory_percent']
             path = info['exe'] or ""
             nombre = info['name'] or "Desconocido"
-
+            # Lógica de Seguridad: Verificamos si el proceso está en la lista blanca o en carpetas de Windows
             es_vital = (
                 nombre.lower() in LISTA_BLANCA_NOMBRES or 
                 any(ruta.lower() in path.lower() for ruta in RUTAS_PROTEGIDAS)
@@ -74,9 +79,10 @@ def listar_candidatos_eliminacion():
             continue
 
     console.print(table)
-    return candidatos
+    return candidatos # Retorna solo los PIDs seguros de manipular
 
 def eliminar_proceso_seguro():
+    """Interfaz de usuario para la finalización controlada de procesos"""
     os.system('cls' if os.name == 'nt' else 'clear')
     console.print(Panel.fit("[bold red]🚀 GESTOR DE OPTIMIZACIÓN DE RECURSOS[/]\n"
                             "[white]Analizando procesos no vitales. Escribe 'no' para salir.[/]"))
@@ -87,7 +93,7 @@ def eliminar_proceso_seguro():
         console.print("[bold green]✔ No se detectaron procesos activos fuera de la lista blanca.[/]")
         input("\nPresiona Enter para continuar...")
         return
-
+    # Entrada de datos validada
     target = Prompt.ask("\n[bold cyan]Ingrese el PID para finalizar[/] (o escribe [bold red]'no'[/] para salir)")
 
     if target.lower() == 'no':
@@ -95,6 +101,7 @@ def eliminar_proceso_seguro():
 
     try:
         pid_int = int(target)
+        # Verificación final: El PID debe estar en la lista de candidatos permitidos
         if pid_int in pids_disponibles:
             proc = psutil.Process(pid_int)
             nombre = proc.name()
